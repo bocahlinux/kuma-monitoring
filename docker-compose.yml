@@ -6,12 +6,20 @@ services:
     restart: unless-stopped
     environment:
       - TZ=${TZ}
+      - UPTIME_KUMA_DB_TYPE=mariadb
+      - UPTIME_KUMA_DB_HOSTNAME=mariadb
+      - UPTIME_KUMA_DB_PORT=3306
+      - UPTIME_KUMA_DB_NAME=${MYSQL_DATABASE}
+      - UPTIME_KUMA_DB_USERNAME=${MYSQL_USER}
+      - UPTIME_KUMA_DB_PASSWORD=${MYSQL_PASSWORD}
     ports:
       - "100.83.41.88:3001:3001"
     volumes:
       - ./data/uptime-kuma:/app/data
     networks:
       - monitoring-network
+    depends_on:
+      - mariadb
 
   mariadb:
     image: mariadb:11
