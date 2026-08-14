@@ -8,6 +8,7 @@ export default function StatusPageEditor({ slug, onBack }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [addMonitorId, setAddMonitorId] = useState('');
+  const [addLabel, setAddLabel] = useState('');
   const [addGroupId, setAddGroupId] = useState('');
   const [newGroupName, setNewGroupName] = useState('');
   const [labelDrafts, setLabelDrafts] = useState({});
@@ -55,18 +56,24 @@ export default function StatusPageEditor({ slug, onBack }) {
   const saveDetails = () =>
     runAction(() => adminApi.updateStatusPage(slug, { title, description }));
 
+  const selectMonitorToAdd = (id) => {
+    setAddMonitorId(id);
+    const monitor = allMonitors.find((m) => m.id === Number(id));
+    setAddLabel(monitor?.name || '');
+  };
+
   const addMonitor = () => {
     if (!addMonitorId) return;
-    const monitor = allMonitors.find((m) => m.id === Number(addMonitorId));
     runAction(() =>
       adminApi.addMonitor(slug, {
         kumaMonitorId: Number(addMonitorId),
-        customLabel: monitor?.name || '',
+        customLabel: addLabel.trim(),
         sortOrder: nextOrder,
         groupId: addGroupId ? Number(addGroupId) : null,
       })
     ).then(() => {
       setAddMonitorId('');
+      setAddLabel('');
       setAddGroupId('');
     });
   };
@@ -278,7 +285,7 @@ export default function StatusPageEditor({ slug, onBack }) {
         ))}
 
         <div className="admin-form admin-form--inline">
-          <select value={addMonitorId} onChange={(e) => setAddMonitorId(e.target.value)}>
+          <select value={addMonitorId} onChange={(e) => selectMonitorToAdd(e.target.value)}>
             <option value="">— pilih monitor untuk ditambahkan —</option>
             {available.map((m) => (
               <option key={m.id} value={m.id}>
@@ -286,6 +293,13 @@ export default function StatusPageEditor({ slug, onBack }) {
               </option>
             ))}
           </select>
+          {addMonitorId && (
+            <input
+              value={addLabel}
+              onChange={(e) => setAddLabel(e.target.value)}
+              placeholder="Nama tampilan"
+            />
+          )}
           <select value={addGroupId} onChange={(e) => setAddGroupId(e.target.value)}>
             <option value="">Tanpa grup</option>
             {namedGroups.map((ng) => (
