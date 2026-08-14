@@ -27,6 +27,23 @@ function composePage(page, pageMonitors, kumaClient) {
   };
 }
 
+// Endpoint publik -- ini yang dikonsumsi frontend status page, sengaja TANPA API key
+// karena datanya memang dimaksudkan buat dilihat publik. Cuma expose status page yang
+// slug-nya sudah diketahui (bukan daftar semua status page).
+export function createPublicStatusPagesRouter(repo, kumaClient) {
+  const router = Router();
+
+  // GET /api/status-pages/:slug - detail satu status page + status live monitor-nya
+  router.get('/status-pages/:slug', (req, res) => {
+    const page = repo.getPageBySlug(req.params.slug);
+    if (!page) return res.status(404).json({ error: 'Status page tidak ditemukan' });
+    res.json({ statusPage: composePage(page, repo.getPageMonitors(page.id), kumaClient) });
+  });
+
+  return router;
+}
+
+// Endpoint admin -- wajib API key, dipakai buat kelola status page (bukan dari frontend publik).
 export function createStatusPagesRouter(repo, kumaClient) {
   const router = Router();
 
@@ -36,13 +53,6 @@ export function createStatusPagesRouter(repo, kumaClient) {
     res.json({
       statusPages: pages.map((p) => composePage(p, repo.getPageMonitors(p.id), kumaClient)),
     });
-  });
-
-  // GET /api/status-pages/:slug - detail satu status page + status live monitor-nya
-  router.get('/status-pages/:slug', (req, res) => {
-    const page = repo.getPageBySlug(req.params.slug);
-    if (!page) return res.status(404).json({ error: 'Status page tidak ditemukan' });
-    res.json({ statusPage: composePage(page, repo.getPageMonitors(page.id), kumaClient) });
   });
 
   // POST /api/status-pages - buat status page baru

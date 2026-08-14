@@ -9,7 +9,7 @@ import { createStatusPagesRepo } from './db/statusPagesRepo.js';
 import { apiKeyAuth } from './middleware/apiKeyAuth.js';
 import { createHealthRouter } from './routes/health.js';
 import { createMonitorsRouter } from './routes/monitors.js';
-import { createStatusPagesRouter } from './routes/statusPages.js';
+import { createPublicStatusPagesRouter, createStatusPagesRouter } from './routes/statusPages.js';
 import { createWsServer } from './ws/wsServer.js';
 
 const db = initDb(config.dbPath);
@@ -25,6 +25,10 @@ app.use(express.json());
 // /health tanpa proteksi API key supaya mudah dipakai load balancer / uptime check lain.
 app.use(createHealthRouter(kumaClient));
 
+// Publik -- dikonsumsi langsung oleh frontend status page, tanpa API key.
+app.use('/api', createPublicStatusPagesRouter(statusPagesRepo, kumaClient));
+
+// Admin -- wajib API key.
 app.use('/api', apiKeyAuth, createMonitorsRouter(kumaClient));
 app.use('/api', apiKeyAuth, createStatusPagesRouter(statusPagesRepo, kumaClient));
 
