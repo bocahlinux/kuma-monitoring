@@ -36,7 +36,7 @@ Server jalan di `http://localhost:4000` (ubah lewat `PORT` di `.env`).
 
 ## Autentikasi
 
-`GET /api/status-pages/:slug` **sengaja publik, tanpa API key** — itu endpoint yang dikonsumsi frontend status page yang memang buat dilihat umum. Kalau API key diwajibkan di situ, key-nya bakal kelihatan siapa saja lewat DevTools browser, jadi percuma jadi rahasia.
+`GET /api/home` dan `GET /api/status-pages/:slug` **sengaja publik, tanpa API key** — itu endpoint yang dikonsumsi frontend status page yang memang buat dilihat umum. Kalau API key diwajibkan di situ, key-nya bakal kelihatan siapa saja lewat DevTools browser, jadi percuma jadi rahasia.
 
 Semua endpoint `/api/*` lainnya (termasuk `GET /api/monitors` yang isinya semua monitor mentah, dan semua endpoint kelola status page) **wajib** header, kalau `API_KEY` diisi di `.env`:
 
@@ -51,13 +51,14 @@ x-api-key: <API_KEY>
 | Method | Endpoint | Auth | Keterangan |
 |---|---|---|---|
 | GET | `/health` | publik | Status backend + status koneksi ke Kuma |
-| GET | `/api/status-pages/:slug` | **publik** | Detail status page + status live monitor di dalamnya — ini yang dipakai frontend |
+| GET | `/api/home` | **publik** | Gabungan semua status page yang di-toggle `showOnHome` — dipakai halaman `/` frontend |
+| GET | `/api/status-pages/:slug` | **publik** | Detail satu status page + status live monitor di dalamnya — dipakai halaman `/<slug>` frontend |
 | GET | `/api/monitors` | API key | Semua monitor mentah + status terkini |
 | GET | `/api/monitors/:id` | API key | Detail satu monitor berdasarkan ID Kuma |
 | GET | `/api/monitors/hostname/:hostname` | API key | Cari monitor berdasarkan hostname (partial match) |
-| GET | `/api/status-pages` | API key | List semua custom status page (admin) |
-| POST | `/api/status-pages` | API key | Buat status page baru — body: `{ slug, title, description }` |
-| PUT | `/api/status-pages/:slug` | API key | Update title/description |
+| GET | `/api/status-pages` | API key | List semua custom status page (admin, termasuk yang `showOnHome`-nya nonaktif) |
+| POST | `/api/status-pages` | API key | Buat status page baru — body: `{ slug, title, description, showOnHome? }` (default `showOnHome: true`) |
+| PUT | `/api/status-pages/:slug` | API key | Update title/description/showOnHome |
 | DELETE | `/api/status-pages/:slug` | API key | Hapus status page |
 | POST | `/api/status-pages/:slug/monitors` | API key | Tambah/update monitor di status page — body: `{ kumaMonitorId, customLabel, sortOrder }` |
 | DELETE | `/api/status-pages/:slug/monitors/:kumaMonitorId` | API key | Keluarkan monitor dari status page |

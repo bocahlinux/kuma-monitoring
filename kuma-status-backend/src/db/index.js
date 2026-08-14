@@ -32,5 +32,18 @@ export function initDb(dbPath) {
     );
   `);
 
+  migrate(db);
+
   return db;
+}
+
+// CREATE TABLE IF NOT EXISTS di atas nggak nambah kolom baru ke tabel yang sudah ada --
+// migrasi additive kecil kayak gini ditangani manual, dicek dulu biar aman dijalankan
+// ulang tiap kali server start.
+function migrate(db) {
+  const columns = db.prepare('PRAGMA table_info(status_pages)').all();
+  const hasShowOnHome = columns.some((c) => c.name === 'show_on_home');
+  if (!hasShowOnHome) {
+    db.exec('ALTER TABLE status_pages ADD COLUMN show_on_home INTEGER NOT NULL DEFAULT 1');
+  }
 }

@@ -41,7 +41,7 @@ Semua data persisten (database Kuma, MariaDB, SQLite custom status page) tersimp
 
 1. Buka **Cloudflare Zero Trust dashboard → Networks → Tunnels**, pilih tunnel yang dipakai `monitoring-cloudflared`.
 2. Public Hostname domain kamu (misal `kuma-status.domainkamu.com`) arahkan ke `http://kuma-status-frontend:80`. Kalau sebelumnya domain ini sempat diarahkan ke `kuma-status-backend:4000`, **ubah Service-nya** ke `kuma-status-frontend:80`.
-3. **Backend tidak dapat Public Hostname sendiri** — nginx di container `frontend` yang reverse-proxy semua `/api/*` ke `kuma-status-backend:4000` lewat docker network internal (lihat `frontend/nginx.conf`). Proteksinya tetap ada di backend: `GET /api/status-pages/:slug` publik (dipakai halaman `/`), endpoint lainnya (kelola status page, `GET /api/monitors` mentah, dipakai halaman `/admin`) wajib header `x-api-key` — salah/tanpa key otomatis dapat `401` dari backend, siapa pun yang tahu URL-nya tetap nggak bisa ngapa-ngapain tanpa API key yang benar.
+3. **Backend tidak dapat Public Hostname sendiri** — nginx di container `frontend` yang reverse-proxy semua `/api/*` ke `kuma-status-backend:4000` lewat docker network internal (lihat `frontend/nginx.conf`). Proteksinya tetap ada di backend: `GET /api/home` dan `GET /api/status-pages/:slug` publik (dipakai halaman `/` dan `/<slug>`), endpoint lainnya (kelola status page, `GET /api/monitors` mentah, dipakai halaman `/admin`) wajib header `x-api-key` — salah/tanpa key otomatis dapat `401` dari backend, siapa pun yang tahu URL-nya tetap nggak bisa ngapa-ngapain tanpa API key yang benar.
 
 Kalau suatu saat butuh akses backend langsung tanpa lewat frontend (misal debug), backend juga sudah di-bind ke IP Tailscale di `docker-compose.yml` (`100.83.41.88:4000`) — lihat service `kuma-status-backend`.
 
@@ -49,7 +49,10 @@ Kalau suatu saat butuh akses backend langsung tanpa lewat frontend (misal debug)
 
 `frontend/` adalah React (Vite) dengan dua halaman:
 
-- **`/<slug>`** — status page publik untuk status page itu (misal `/samsat`, `/vpn`), consume `GET /api/status-pages/:slug` (tanpa API key, di-proxy nginx ke backend) lewat polling berkala. `/` (tanpa slug) menampilkan status page default (`FRONTEND_STATUS_PAGE_SLUG`). Satu deployment melayani semua status page yang ada — bikin status page baru di `/admin` langsung bisa diakses lewat `/<slug>`-nya, tanpa rebuild.
+- **`/`** — halaman gabungan: tiap status page yang ditandai "tampil di halaman utama" (toggle di `/admin`) muncul sebagai satu kategori/section, mirip tampilan Groups di status page bawaan Kuma. Consume `GET /api/home`.
+- **`/<slug>`** — status page publik untuk satu status page itu saja (misal `/samsat`, `/vpn`), dipakai kalau mau share link satu kategori tanpa yang lain. Consume `GET /api/status-pages/:slug`. Status page tetap bisa diakses di sini walau toggle "tampil di halaman utama"-nya nonaktif.
+
+Satu deployment melayani semua status page yang ada — bikin status page baru di `/admin` langsung bisa diakses lewat `/<slug>`-nya (dan otomatis ikut di `/` kalau toggle-nya nyala), tanpa rebuild.
 - **`/admin`** — kelola status page (buat/hapus, atur monitor, label, urutan) lewat UI, login pakai `API_KEY` yang sama dengan backend. Detail keamanannya ada di [frontend/README.md](frontend/README.md#keamanan-halaman-admin).
 
 Konfigurasi frontend (`FRONTEND_API_BASE_URL`, `FRONTEND_STATUS_PAGE_SLUG`, dst di `.env`) **di-bake ke file statis saat build**, bukan dibaca saat runtime — jadi tiap ganti nilainya wajib rebuild:

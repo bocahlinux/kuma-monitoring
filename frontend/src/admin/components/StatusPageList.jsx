@@ -6,6 +6,7 @@ const SLUG_RE = /^[a-z0-9-]+$/;
 export default function StatusPageList({ pages, onOpen, onChanged, onLogout }) {
   const [slug, setSlug] = useState('');
   const [title, setTitle] = useState('');
+  const [showOnHome, setShowOnHome] = useState(true);
   const [error, setError] = useState(null);
   const [creating, setCreating] = useState(false);
 
@@ -19,9 +20,10 @@ export default function StatusPageList({ pages, onOpen, onChanged, onLogout }) {
     setCreating(true);
     setError(null);
     try {
-      await adminApi.createStatusPage({ slug: slug.trim(), title: title.trim() });
+      await adminApi.createStatusPage({ slug: slug.trim(), title: title.trim(), showOnHome });
       setSlug('');
       setTitle('');
+      setShowOnHome(true);
       onChanged();
     } catch (err) {
       setError(err.message);
@@ -36,6 +38,11 @@ export default function StatusPageList({ pages, onOpen, onChanged, onLogout }) {
     onChanged();
   };
 
+  const toggleHome = async (page) => {
+    await adminApi.updateStatusPage(page.slug, { showOnHome: !page.showOnHome });
+    onChanged();
+  };
+
   return (
     <div className="admin-page">
       <header className="admin-page__header">
@@ -47,6 +54,10 @@ export default function StatusPageList({ pages, onOpen, onChanged, onLogout }) {
 
       <section className="admin-card">
         <h2>Status page yang ada</h2>
+        <p className="admin-dim">
+          "Tampil di /" = ikut muncul sebagai kategori di halaman utama (<a href="/" target="_blank" rel="noreferrer">/</a>).
+          Nonaktif = cuma bisa diakses lewat link langsungnya.
+        </p>
         {pages.length === 0 && <p className="admin-dim">Belum ada status page.</p>}
         <ul className="admin-list">
           {pages.map((p) => (
@@ -63,6 +74,10 @@ export default function StatusPageList({ pages, onOpen, onChanged, onLogout }) {
                 </span>
               </div>
               <div className="admin-list__actions">
+                <label className="admin-checkbox">
+                  <input type="checkbox" checked={p.showOnHome} onChange={() => toggleHome(p)} />
+                  Tampil di /
+                </label>
                 <button className="btn" onClick={() => onOpen(p.slug)}>
                   Kelola
                 </button>
@@ -85,6 +100,14 @@ export default function StatusPageList({ pages, onOpen, onChanged, onLogout }) {
           <label>
             Judul
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Status Layanan SAMSAT" />
+          </label>
+          <label className="admin-checkbox">
+            <input
+              type="checkbox"
+              checked={showOnHome}
+              onChange={(e) => setShowOnHome(e.target.checked)}
+            />
+            Tampil di halaman utama (/)
           </label>
           <button className="btn btn--primary" type="submit" disabled={creating}>
             {creating ? 'Membuat…' : 'Buat'}

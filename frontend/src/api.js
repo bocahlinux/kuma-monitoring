@@ -9,3 +9,13 @@ export async function fetchStatusPage(slug) {
   const data = await res.json();
   return data.statusPage;
 }
+
+// Gabungan semua status page yang ditandai "tampil di halaman utama".
+export async function fetchHome() {
+  const res = await fetch(`${API_BASE_URL}/api/home`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}

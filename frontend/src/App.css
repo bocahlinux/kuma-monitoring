@@ -106,6 +106,26 @@
   color: var(--surface);
 }
 
+.category {
+  margin-bottom: 32px;
+}
+
+.category:last-of-type {
+  margin-bottom: 0;
+}
+
+.category__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.category__description {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
 .monitor-list {
   display: flex;
   flex-direction: column;

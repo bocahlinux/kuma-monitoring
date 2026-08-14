@@ -1,20 +1,25 @@
 # frontend
 
-React (Vite) berisi dua halaman:
+React (Vite) berisi tiga halaman:
 
-- **`/<slug>`** — status page publik untuk status page dengan slug itu (misal `/samsat`, `/vpn`), consume `GET /api/status-pages/:slug` dari [kuma-status-backend](../kuma-status-backend) lewat polling berkala. Endpoint itu sengaja tanpa API key karena memang dimaksudkan buat dilihat publik. Buka `/` tanpa slug menampilkan status page default (`VITE_STATUS_PAGE_SLUG` di `.env`) — satu deployment frontend melayani **semua** status page yang ada, nggak perlu rebuild tiap bikin status page baru.
-- **`/admin`** — kelola status page (buat/hapus, atur monitor mana yang ditampilkan, label, urutan) lewat UI, tanpa perlu `curl` manual. Login pakai `API_KEY` yang sama dengan backend. Tiap status page di list-nya ada link langsung ke halaman publiknya (`/<slug>`).
+- **`/`** — halaman gabungan, tiap status page yang ditandai "tampil di halaman utama" (toggle di `/admin`) muncul sebagai satu kategori/section, mirip Groups di status page bawaan Kuma. Consume `GET /api/home`.
+- **`/<slug>`** — status page publik untuk satu status page saja (misal `/samsat`, `/vpn`), buat kalau mau share link satu kategori tanpa yang lain. Consume `GET /api/status-pages/:slug`. Tetap bisa diakses walau toggle "tampil di halaman utama"-nya nonaktif.
+- **`/admin`** — kelola status page (buat/hapus, toggle tampil di `/` atau tidak, atur monitor mana yang ditampilkan, label, urutan) lewat UI, tanpa perlu `curl` manual. Login pakai `API_KEY` yang sama dengan backend. Tiap status page di list-nya ada link langsung ke halaman publiknya (`/<slug>`).
+
+Kedua endpoint publik (`/api/home`, `/api/status-pages/:slug`) sengaja tanpa API key karena memang dimaksudkan buat dilihat publik. Satu deployment frontend melayani **semua** status page yang ada — bikin status page baru di `/admin` langsung bisa diakses, nggak perlu rebuild.
 
 ## Struktur
 
 - `src/api.js` — fetch ke backend (status page publik)
-- `src/App.jsx` — state, polling, banner status keseluruhan (halaman publik)
-- `src/components/MonitorRow.jsx` — satu baris monitor (badge persentase + nama)
+- `src/App.jsx` — halaman `/<slug>`: state, polling, banner status satu kategori
+- `src/HomePage.jsx` — halaman `/`: fetch `/api/home`, render tiap status page sebagai section kategori
+- `src/components/MonitorRow.jsx` — satu baris monitor (badge persentase + nama), dipakai `App` maupun `HomePage`
 - `src/components/HeartbeatBar.jsx` — bar chart heartbeat (maks 50 terakhir, dari backend)
+- `src/statusMeta.js` — ikon + label Indonesia per status (`up`/`down`/`pending`/`maintenance`/`unknown`), satu sumber dipakai halaman publik & admin
 - `src/admin/adminApi.js` — fetch ke endpoint admin backend, kirim header `x-api-key` (disimpan di `sessionStorage`, hilang begitu tab ditutup)
 - `src/admin/AdminApp.jsx` — orchestrator halaman admin (login → list status page → editor)
 - `src/admin/components/` — `Login`, `StatusPageList`, `StatusPageEditor`
-- `src/main.jsx` — routing sederhana berbasis `window.location.pathname` (segmen pertama URL = slug status page, kecuali `admin`), tanpa react-router
+- `src/main.jsx` — routing sederhana berbasis `window.location.pathname` (kosong = `HomePage`, `admin` = `AdminApp`, selain itu = `App` dengan slug dari segmen pertama URL), tanpa react-router
 
 ## Development lokal
 
@@ -32,7 +37,7 @@ npm run dev
 | Variabel | Keterangan |
 |---|---|
 | `VITE_API_BASE_URL` | Kosongkan buat production (nginx yang reverse-proxy ke backend, lihat `nginx.conf`). Isi kalau dev lokal langsung ke backend tanpa proxy, misal `http://localhost:4000`. |
-| `VITE_STATUS_PAGE_SLUG` | Slug status page **default**, dipakai kalau URL diakses tanpa slug (`/`). Status page lain tetap bisa diakses langsung lewat `/<slug>` tanpa perlu ganti ini. |
+| `VITE_HOME_TITLE` | Judul halaman `/` (halaman gabungan kategori), default "Status Layanan" |
 | `VITE_POLL_INTERVAL_MS` | Interval polling, default 20000 (20 detik) |
 | `VITE_UPTIME_PERIOD_KEY` | Key periode uptime yang dipakai sebagai badge persentase (default `"24"`) — cek response backend buat lihat key apa saja yang tersedia |
 

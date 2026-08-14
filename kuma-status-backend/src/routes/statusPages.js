@@ -22,16 +22,30 @@ function composePage(page, pageMonitors, kumaClient) {
     title: page.title,
     description: page.description,
     updatedAt: page.updated_at,
+    showOnHome: !!page.show_on_home,
     overallStatus,
     monitors,
   };
 }
 
+function combinedOverallStatus(pages) {
+  if (pages.some((p) => p.overallStatus === 'down')) return 'down';
+  if (pages.some((p) => p.overallStatus === 'unknown')) return 'unknown';
+  return 'up';
+}
+
 // Endpoint publik -- ini yang dikonsumsi frontend status page, sengaja TANPA API key
 // karena datanya memang dimaksudkan buat dilihat publik. Cuma expose status page yang
-// slug-nya sudah diketahui (bukan daftar semua status page).
+// slug-nya sudah diketahui, atau (buat /home) status page yang di-toggle "tampil di
+// halaman utama" -- bukan daftar SEMUA status page (itu tetap admin-only).
 export function createPublicStatusPagesRouter(repo, kumaClient) {
   const router = Router();
+
+  // GET /api/home - gabungan semua status page yang di-toggle tampil di halaman utama
+  router.get('/home', (req, res) => {
+    const pages = repo.listVisiblePages().map((p) => composePage(p, repo.getPageMonitors(p.id), kumaClient));
+    res.json({ statusPages: pages, overallStatus: combinedOverallStatus(pages) });
+  });
 
   // GET /api/status-pages/:slug - detail satu status page + status live monitor-nya
   router.get('/status-pages/:slug', (req, res) => {
@@ -57,12 +71,12 @@ export function createStatusPagesRouter(repo, kumaClient) {
 
   // POST /api/status-pages - buat status page baru
   router.post('/status-pages', (req, res) => {
-    const { slug, title, description } = req.body || {};
+    const { slug, title, description, showOnHome } = req.body || {};
     if (!slug || !title) {
       return res.status(400).json({ error: 'slug dan title wajib diisi' });
     }
     try {
-      const page = repo.createPage({ slug, title, description });
+      const page = repo.createPage({ slug, title, description, showOnHome });
       res.status(201).json({ statusPage: composePage(page, repo.getPageMonitors(page.id), kumaClient) });
     } catch (err) {
       if (String(err.message).includes('UNIQUE')) {
@@ -72,12 +86,12 @@ export function createStatusPagesRouter(repo, kumaClient) {
     }
   });
 
-  // PUT /api/status-pages/:slug - update title/description
+  // PUT /api/status-pages/:slug - update title/description/showOnHome
   router.put('/status-pages/:slug', (req, res) => {
     const existing = repo.getPageBySlug(req.params.slug);
     if (!existing) return res.status(404).json({ error: 'Status page tidak ditemukan' });
-    const { title, description } = req.body || {};
-    const page = repo.updatePage(req.params.slug, { title, description });
+    const { title, description, showOnHome } = req.body || {};
+    const page = repo.updatePage(req.params.slug, { title, description, showOnHome });
     res.json({ statusPage: composePage(page, repo.getPageMonitors(page.id), kumaClient) });
   });
 
