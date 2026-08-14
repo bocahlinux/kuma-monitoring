@@ -9,6 +9,11 @@ export const HEARTBEAT_STATUS = {
   3: 'maintenance',
 };
 
+// Jumlah heartbeat terakhir yang disimpan per monitor (buat bar chart di frontend,
+// mirip status page bawaan Kuma). Dibatasi supaya memory tetap datar walau backend
+// jalan berhari-hari -- lihat catatan di constructor.
+const MAX_HEARTBEAT_HISTORY = 50;
+
 class KumaClient extends EventEmitter {
   constructor({ baseUrl, username, password }) {
     super();
@@ -22,10 +27,10 @@ class KumaClient extends EventEmitter {
     this.lastError = null;
 
     // Live state di-cache di memory, sumber kebenarannya tetap Kuma.
-    // Cuma nyimpen heartbeat TERAKHIR per monitor (bukan history), supaya footprint
-    // memory tetap datar walau backend jalan berhari-hari -- penting di VPS RAM kecil.
+    // heartbeatHistory dibatasi MAX_HEARTBEAT_HISTORY per monitor (bukan tak terbatas),
+    // supaya footprint memory tetap kecil & terprediksi walau backend jalan berhari-hari.
     this.monitors = new Map(); // id(string) -> monitor config dari Kuma
-    this.heartbeats = new Map(); // id(number) -> heartbeat terakhir
+    this.heartbeatHistory = new Map(); // id(number) -> array heartbeat terbaru (maks MAX_HEARTBEAT_HISTORY)
     this.uptime = new Map(); // id(number) -> { [periodKey]: percent }
     this.avgPing = new Map(); // id(number) -> number
     this.certInfo = new Map(); // id(number) -> info sertifikat (monitor https)
@@ -66,15 +71,22 @@ class KumaClient extends EventEmitter {
 
     this.socket.on('heartbeat', (hb) => {
       if (!hb) return;
-      this.heartbeats.set(hb.monitorID, hb);
+      const history = this.heartbeatHistory.get(hb.monitorID) || [];
+      history.push(hb);
+      if (history.length > MAX_HEARTBEAT_HISTORY) {
+        history.splice(0, history.length - MAX_HEARTBEAT_HISTORY);
+      }
+      this.heartbeatHistory.set(hb.monitorID, history);
       this.emit('update', { type: 'heartbeat', monitorId: hb.monitorID });
     });
 
-    this.socket.on('heartbeatList', (monitorID, data) => {
-      const list = Array.isArray(data) ? data : [];
-      if (list.length) {
-        this.heartbeats.set(monitorID, list[list.length - 1]);
-      }
+    this.socket.on('heartbeatList', (monitorID, data, overwrite) => {
+      // Kuma ngirim ini penuh (overwrite=true) tiap kali monitor pertama kali disinkron
+      // setelah login. Kita nggak pernah minta history lama (pagination), jadi kalau
+      // overwrite=false kita abaikan saja daripada nyimpen data tak terbatas.
+      if (!overwrite) return;
+      const list = (Array.isArray(data) ? data : []).slice(-MAX_HEARTBEAT_HISTORY);
+      this.heartbeatHistory.set(monitorID, list);
       this.emit('update', { type: 'heartbeatList', monitorId: monitorID });
     });
 
@@ -162,7 +174,8 @@ class KumaClient extends EventEmitter {
 
   _composeMonitor(idString, monitor) {
     const idNum = Number(idString);
-    const hb = this.heartbeats.get(idNum);
+    const history = this.heartbeatHistory.get(idNum) || [];
+    const hb = history.length ? history[history.length - 1] : null;
     return {
       id: idNum,
       name: monitor.name,
@@ -177,6 +190,14 @@ class KumaClient extends EventEmitter {
       avgPing: this.avgPing.get(idNum) ?? null,
       uptime: this.uptime.get(idNum) || {},
       cert: this.certInfo.get(idNum) || null,
+      // Buat bar chart di frontend, urut lama -> baru, maks MAX_HEARTBEAT_HISTORY item.
+      heartbeats: history.map((h) => ({
+        status: h.status,
+        statusLabel: h.status in HEARTBEAT_STATUS ? HEARTBEAT_STATUS[h.status] : 'unknown',
+        time: h.time,
+        ping: h.ping,
+        msg: h.msg,
+      })),
     };
   }
 }

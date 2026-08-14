@@ -62,6 +62,31 @@ Untuk WebSocket, kirim sebagai query string: `ws://localhost:4000/ws?apiKey=<API
 | POST | `/api/status-pages/:slug/monitors` | Tambah/update monitor di status page — body: `{ kumaMonitorId, customLabel, sortOrder }` |
 | DELETE | `/api/status-pages/:slug/monitors/:kumaMonitorId` | Keluarkan monitor dari status page |
 
+## Bentuk data monitor
+
+Setiap monitor (di `/api/monitors`, `/api/monitors/:id`, dan di dalam `monitors[].live` pada `/api/status-pages/*`) punya field:
+
+```jsonc
+{
+  "id": 1,
+  "name": "01-palangka-raya",
+  "hostname": "10.0.1.1",
+  "status": 1,               // 0=down, 1=up, 2=pending, 3=maintenance
+  "statusLabel": "up",
+  "message": null,
+  "ping": 12,
+  "lastCheckedAt": "2026-08-14 10:00:00",
+  "avgPing": 15.2,
+  "uptime": { "24": 100, "720": 91.67 },   // key = periode dari Kuma, value = persen
+  "cert": null,
+  "heartbeats": [                           // maks 50 item terakhir, urut lama -> baru
+    { "status": 1, "statusLabel": "up", "time": "...", "ping": 12, "msg": null }
+  ]
+}
+```
+
+`heartbeats` ini yang dipakai buat bikin bar chart ala status page bawaan Kuma (tiap elemen = satu kotak/bar, warnanya dari `status`). Cuma nyimpen 50 heartbeat terakhir per monitor di memory (bukan seluruh history) — kalau butuh history lebih panjang dari itu, ambil langsung dari Kuma, bukan dari backend ini.
+
 ## WebSocket (`/ws`)
 
 Setelah connect, server kirim `{ type: "snapshot", kumaStatus, monitors }` sekali di awal, lalu tiap ada perubahan dari Kuma:
