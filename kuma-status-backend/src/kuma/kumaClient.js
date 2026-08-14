@@ -22,9 +22,10 @@ class KumaClient extends EventEmitter {
     this.lastError = null;
 
     // Live state di-cache di memory, sumber kebenarannya tetap Kuma.
+    // Cuma nyimpen heartbeat TERAKHIR per monitor (bukan history), supaya footprint
+    // memory tetap datar walau backend jalan berhari-hari -- penting di VPS RAM kecil.
     this.monitors = new Map(); // id(string) -> monitor config dari Kuma
     this.heartbeats = new Map(); // id(number) -> heartbeat terakhir
-    this.heartbeatLists = new Map(); // id(number) -> array heartbeat terbaru
     this.uptime = new Map(); // id(number) -> { [periodKey]: percent }
     this.avgPing = new Map(); // id(number) -> number
     this.certInfo = new Map(); // id(number) -> info sertifikat (monitor https)
@@ -69,13 +70,8 @@ class KumaClient extends EventEmitter {
       this.emit('update', { type: 'heartbeat', monitorId: hb.monitorID });
     });
 
-    this.socket.on('heartbeatList', (monitorID, data, overwrite) => {
+    this.socket.on('heartbeatList', (monitorID, data) => {
       const list = Array.isArray(data) ? data : [];
-      if (overwrite || !this.heartbeatLists.has(monitorID)) {
-        this.heartbeatLists.set(monitorID, list);
-      } else {
-        this.heartbeatLists.set(monitorID, [...this.heartbeatLists.get(monitorID), ...list]);
-      }
       if (list.length) {
         this.heartbeats.set(monitorID, list[list.length - 1]);
       }
