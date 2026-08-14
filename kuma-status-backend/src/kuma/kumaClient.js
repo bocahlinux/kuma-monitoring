@@ -25,6 +25,7 @@ class KumaClient extends EventEmitter {
     this.connected = false;
     this.loggedIn = false;
     this.lastError = null;
+    this.loginRetryTimer = null;
 
     // Live state di-cache di memory, sumber kebenarannya tetap Kuma.
     // heartbeatHistory dibatasi MAX_HEARTBEAT_HISTORY per monitor (bukan tak terbatas),
@@ -54,6 +55,7 @@ class KumaClient extends EventEmitter {
     this.socket.on('disconnect', (reason) => {
       this.connected = false;
       this.loggedIn = false;
+      clearTimeout(this.loginRetryTimer);
       console.warn('[kuma] terputus:', reason);
       this._emitStatus();
     });
@@ -120,10 +122,22 @@ class KumaClient extends EventEmitter {
       return;
     }
 
-    this.socket.emit(
+    // .timeout() penting -- tanpa ini, kalau Kuma nggak pernah balas ack request login
+    // (bukan ditolak, cuma diem aja -- pernah kejadian tanpa error jelas), callback di
+    // bawah nggak akan pernah jalan dan kita nyangkut selamanya di "connected tapi
+    // belum loggedIn" sampai koneksi websocket-nya sendiri putus-nyambung ulang.
+    this.socket.timeout(15000).emit(
       'login',
       { username: this.username, password: this.password, token: '' },
-      (res) => {
+      (err, res) => {
+        if (err) {
+          this.loggedIn = false;
+          this.lastError = 'login timeout (Kuma tidak merespons), mencoba lagi';
+          console.error(`[kuma] ${this.lastError}`);
+          this._emitStatus();
+          this._scheduleLoginRetry();
+          return;
+        }
         if (res && res.ok) {
           this.loggedIn = true;
           this.lastError = null;
@@ -132,10 +146,18 @@ class KumaClient extends EventEmitter {
           this.loggedIn = false;
           this.lastError = (res && res.msg) || 'login gagal';
           console.error('[kuma] login gagal:', this.lastError);
+          this._scheduleLoginRetry();
         }
         this._emitStatus();
       }
     );
+  }
+
+  _scheduleLoginRetry() {
+    clearTimeout(this.loginRetryTimer);
+    this.loginRetryTimer = setTimeout(() => {
+      if (this.connected && !this.loggedIn) this._login();
+    }, 5000);
   }
 
   _emitStatus() {
