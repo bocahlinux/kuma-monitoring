@@ -37,6 +37,16 @@ export function initDb(dbPath) {
       name TEXT NOT NULL,
       sort_order INTEGER NOT NULL DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS incidents (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      kuma_monitor_id INTEGER NOT NULL,
+      started_at TEXT NOT NULL,
+      ended_at TEXT,
+      message TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_incidents_monitor ON incidents (kuma_monitor_id, started_at DESC);
   `);
 
   migrate(db);

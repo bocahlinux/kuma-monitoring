@@ -16,11 +16,19 @@ function formatPercent(fraction) {
   return `${percent}%`;
 }
 
+function formatMeta(fraction, ping) {
+  const parts = [];
+  if (fraction != null) parts.push(formatPercent(fraction));
+  if (typeof ping === 'number') parts.push(`${Math.round(ping)}ms`);
+  return parts.join(' · ');
+}
+
 export default function MonitorRow({ monitor }) {
   const { label, live } = monitor;
   const statusLabel = live.statusLabel || 'unknown';
   const statusText = STATUS_LABEL_ID[statusLabel] || STATUS_LABEL_ID.unknown;
   const fraction = getUptimeFraction(live.uptime);
+  const meta = formatMeta(fraction, live.ping);
 
   return (
     <div className="monitor-row">
@@ -28,7 +36,7 @@ export default function MonitorRow({ monitor }) {
         <span className="sr-only">{statusText}</span>
       </span>
       <span className="monitor-row__name">{label}</span>
-      {fraction != null && <span className="monitor-row__uptime">{formatPercent(fraction)}</span>}
+      {meta && <span className="monitor-row__uptime">{meta}</span>}
       <HeartbeatBar heartbeats={live.heartbeats || []} />
     </div>
   );

@@ -4,8 +4,10 @@ import cors from 'cors';
 
 import { config } from './config.js';
 import KumaClient from './kuma/kumaClient.js';
+import { createIncidentTracker } from './kuma/incidentTracker.js';
 import { initDb } from './db/index.js';
 import { createStatusPagesRepo } from './db/statusPagesRepo.js';
+import { createIncidentsRepo } from './db/incidentsRepo.js';
 import { apiKeyAuth } from './middleware/apiKeyAuth.js';
 import { createHealthRouter } from './routes/health.js';
 import { createMonitorsRouter } from './routes/monitors.js';
@@ -14,9 +16,11 @@ import { createWsServer } from './ws/wsServer.js';
 
 const db = initDb(config.dbPath);
 const statusPagesRepo = createStatusPagesRepo(db);
+const incidentsRepo = createIncidentsRepo(db);
 
 const kumaClient = new KumaClient(config.kuma);
 kumaClient.connect();
+createIncidentTracker(kumaClient, incidentsRepo);
 
 const app = express();
 app.use(cors({ origin: config.corsOrigin === '*' ? true : config.corsOrigin.split(',') }));
@@ -26,11 +30,11 @@ app.use(express.json());
 app.use(createHealthRouter(kumaClient));
 
 // Publik -- dikonsumsi langsung oleh frontend status page, tanpa API key.
-app.use('/api', createPublicStatusPagesRouter(statusPagesRepo, kumaClient));
+app.use('/api', createPublicStatusPagesRouter(statusPagesRepo, incidentsRepo, kumaClient));
 
 // Admin -- wajib API key.
 app.use('/api', apiKeyAuth, createMonitorsRouter(kumaClient));
-app.use('/api', apiKeyAuth, createStatusPagesRouter(statusPagesRepo, kumaClient));
+app.use('/api', apiKeyAuth, createStatusPagesRouter(statusPagesRepo, incidentsRepo, kumaClient));
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });

@@ -15,11 +15,12 @@ Kedua endpoint publik (`/api/home`, `/api/status-pages/:slug`) sengaja tanpa API
 - `src/api.js` — fetch ke backend (status page publik)
 - `src/App.jsx` — halaman `/<slug>`: state, polling, satu kategori
 - `src/HomePage.jsx` — halaman `/`: fetch `/api/home`, render tiap status page sebagai section kategori
-- `src/stats.js` — hitung jumlah terhubung/terputus/total dari daftar monitor
-- `src/components/StatRow.jsx` — kartu ringkasan (Terhubung/Terputus/Total monitor), dipakai `App` maupun `HomePage`
+- `src/stats.js` — hitung jumlah terhubung/terputus/total, dan rata-rata uptime jangka panjang, dari daftar monitor
+- `src/components/StatRow.jsx` — kartu ringkasan (Terhubung/Terputus/Total monitor/Uptime jangka panjang), dipakai `App` maupun `HomePage`
 - `src/components/GroupSection.jsx` — satu Group (header + daftar monitornya), dipakai `App` maupun `HomePage`; tanpa header kalau grup-nya `null` (monitor belum di-assign)
-- `src/components/MonitorRow.jsx` — satu baris monitor: dot status + nama + persentase uptime + bar heartbeat sejajar
+- `src/components/MonitorRow.jsx` — satu baris monitor: dot status + nama + persentase uptime + response time + bar heartbeat sejajar
 - `src/components/HeartbeatBar.jsx` — bar heartbeat inline di samping nama; kalau nggak muat, cell tertua terpotong rapi di sisi kiri (bukan bikin baris meluber)
+- `src/components/IncidentsList.jsx` — daftar insiden terbaru (deteksi otomatis oleh backend, lihat README backend); nggak render apa-apa kalau belum pernah ada insiden
 - `src/statusMeta.js` — ikon + label Indonesia per status (`up`/`down`/`pending`/`maintenance`/`unknown`), satu sumber dipakai halaman publik & admin
 - `src/admin/adminApi.js` — fetch ke endpoint admin backend, kirim header `x-api-key` (disimpan di `sessionStorage`, hilang begitu tab ditutup)
 - `src/admin/AdminApp.jsx` — orchestrator halaman admin (login → list status page → editor)
@@ -42,9 +43,11 @@ npm run dev
 | Variabel | Keterangan |
 |---|---|
 | `VITE_API_BASE_URL` | Kosongkan buat production (nginx yang reverse-proxy ke backend, lihat `nginx.conf`). Isi kalau dev lokal langsung ke backend tanpa proxy, misal `http://localhost:4000`. |
-| `VITE_HOME_TITLE` | Judul halaman `/` (halaman gabungan kategori), default "Status Layanan" |
+| `VITE_HOME_TITLE` | Judul halaman `/` (halaman gabungan kategori). Juga dipakai buat `<title>`/`og:title`/`og:description` di `index.html`, dan `document.title` per halaman `/<slug>` diganti otomatis ke judul status page-nya. |
+| `VITE_HOME_DESCRIPTION` | Meta description / `og:description` — muncul di preview link waktu di-share (WhatsApp/Telegram/dll) |
 | `VITE_POLL_INTERVAL_MS` | Interval polling, default 20000 (20 detik) |
-| `VITE_UPTIME_PERIOD_KEY` | Key periode uptime yang dipakai sebagai badge persentase (default `"24"`) — cek response backend buat lihat key apa saja yang tersedia |
+| `VITE_UPTIME_PERIOD_KEY` | Key periode uptime yang dipakai sebagai badge persentase per monitor (default `"24"`) — cek response backend buat lihat key apa saja yang tersedia |
+| `VITE_HEADLINE_PERIOD_KEY` / `VITE_HEADLINE_PERIOD_LABEL` | Key + label periode buat tile "Uptime" di kartu ringkasan (rata-rata semua monitor), default `"720"` (30 hari) |
 
 ## Build & Docker
 

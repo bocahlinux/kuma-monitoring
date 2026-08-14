@@ -106,11 +106,20 @@ Response `statusPage` (dari `/api/home` → `statusPages[]`, atau `/api/status-p
     { "id": null, "name": null, "monitors": [ /* belum di-assign ke grup manapun */ ] },
     { "id": 1, "name": "VPN", "sortOrder": 0, "monitors": [ /* ... */ ] },
     { "id": 2, "name": "SAMSAT", "sortOrder": 1, "monitors": [ /* ... */ ] }
+  ],
+  "incidents": [
+    { "id": 1, "kumaMonitorId": 4, "monitorLabel": "01-palangka-raya", "startedAt": "2026-08-14T10:00:00.000Z", "endedAt": "2026-08-14T10:05:00.000Z", "message": "Connection timeout" }
   ]
 }
 ```
 
 Grup `id: null` (tanpa nama) selalu muncul pertama kalau ada monitor yang belum di-assign — frontend nge-render itu tanpa header sama sekali. Kelola grup lewat endpoint `/api/status-pages/:slug/groups*` di tabel di atas.
+
+## Riwayat insiden (otomatis, bukan manual)
+
+Backend sendiri yang mendeteksi transisi up↔down dari live heartbeat Kuma (lihat `src/kuma/incidentTracker.js`) dan mencatatnya ke tabel `incidents` di SQLite — **bukan** sesuatu yang di-input manual lewat `/admin`. Tiap `statusPage` response otomatis membawa maks 15 insiden terbaru (`incidents`, sudah urut terbaru dulu) dari monitor-monitor yang ada di page itu; `endedAt: null` artinya insiden masih berlangsung.
+
+Batasan yang perlu diketahui: state "status terakhir yang diobservasi" cuma disimpan di memory (bukan di database), jadi kalau backend di-restart pas ada monitor yang lagi down, transisi down→up berikutnya buat monitor itu tidak akan tercatat sebagai insiden yang "ditutup" (karena tracker menganggap itu observasi pertama, bukan pemulihan) — insiden historis yang sudah tercatat sebelum restart tetap aman, cuma satu insiden yang kebetulan lagi berlangsung pas restart itu yang datanya tidak lengkap.
 
 ## WebSocket (`/ws`)
 

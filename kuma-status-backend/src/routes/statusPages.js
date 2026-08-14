@@ -1,6 +1,8 @@
 import { Router } from 'express';
 
-function composePage(page, pageMonitors, pageGroups, kumaClient) {
+const MAX_INCIDENTS = 15;
+
+function composePage(page, pageMonitors, pageGroups, incidentRows, kumaClient) {
   const monitors = pageMonitors.map((pm) => {
     const live = kumaClient.getMonitorById(pm.kuma_monitor_id);
     return {
@@ -36,6 +38,16 @@ function composePage(page, pageMonitors, pageGroups, kumaClient) {
     ? [{ id: null, name: null, sortOrder: -1, monitors: ungroupedMonitors }, ...namedGroups]
     : namedGroups;
 
+  const labelByMonitorId = new Map(monitors.map((m) => [m.kumaMonitorId, m.label]));
+  const incidents = incidentRows.map((row) => ({
+    id: row.id,
+    kumaMonitorId: row.kuma_monitor_id,
+    monitorLabel: labelByMonitorId.get(row.kuma_monitor_id) || `Monitor #${row.kuma_monitor_id}`,
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+    message: row.message,
+  }));
+
   return {
     slug: page.slug,
     title: page.title,
@@ -45,11 +57,18 @@ function composePage(page, pageMonitors, pageGroups, kumaClient) {
     overallStatus,
     monitors,
     groups,
+    incidents,
   };
 }
 
-function composeFull(repo, page, kumaClient) {
-  return composePage(page, repo.getPageMonitors(page.id), repo.listGroups(page.id), kumaClient);
+function composeFull(repo, incidentsRepo, page, kumaClient) {
+  const monitors = repo.getPageMonitors(page.id);
+  const groups = repo.listGroups(page.id);
+  const incidentRows = incidentsRepo.listRecentForMonitors(
+    monitors.map((m) => m.kuma_monitor_id),
+    MAX_INCIDENTS
+  );
+  return composePage(page, monitors, groups, incidentRows, kumaClient);
 }
 
 function combinedOverallStatus(pages) {
@@ -62,12 +81,12 @@ function combinedOverallStatus(pages) {
 // karena datanya memang dimaksudkan buat dilihat publik. Cuma expose status page yang
 // slug-nya sudah diketahui, atau (buat /home) status page yang di-toggle "tampil di
 // halaman utama" -- bukan daftar SEMUA status page (itu tetap admin-only).
-export function createPublicStatusPagesRouter(repo, kumaClient) {
+export function createPublicStatusPagesRouter(repo, incidentsRepo, kumaClient) {
   const router = Router();
 
   // GET /api/home - gabungan semua status page yang di-toggle tampil di halaman utama
   router.get('/home', (req, res) => {
-    const pages = repo.listVisiblePages().map((p) => composeFull(repo, p, kumaClient));
+    const pages = repo.listVisiblePages().map((p) => composeFull(repo, incidentsRepo, p, kumaClient));
     res.json({ statusPages: pages, overallStatus: combinedOverallStatus(pages) });
   });
 
@@ -75,14 +94,14 @@ export function createPublicStatusPagesRouter(repo, kumaClient) {
   router.get('/status-pages/:slug', (req, res) => {
     const page = repo.getPageBySlug(req.params.slug);
     if (!page) return res.status(404).json({ error: 'Status page tidak ditemukan' });
-    res.json({ statusPage: composeFull(repo, page, kumaClient) });
+    res.json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
   });
 
   return router;
 }
 
 // Endpoint admin -- wajib API key, dipakai buat kelola status page (bukan dari frontend publik).
-export function createStatusPagesRouter(repo, kumaClient) {
+export function createStatusPagesRouter(repo, incidentsRepo, kumaClient) {
   const router = Router();
 
   function requirePage(req, res) {
@@ -108,7 +127,7 @@ export function createStatusPagesRouter(repo, kumaClient) {
   // GET /api/status-pages - list semua custom status page (ringkas)
   router.get('/status-pages', (req, res) => {
     const pages = repo.listPages();
-    res.json({ statusPages: pages.map((p) => composeFull(repo, p, kumaClient)) });
+    res.json({ statusPages: pages.map((p) => composeFull(repo, incidentsRepo, p, kumaClient)) });
   });
 
   // POST /api/status-pages - buat status page baru
@@ -119,7 +138,7 @@ export function createStatusPagesRouter(repo, kumaClient) {
     }
     try {
       const page = repo.createPage({ slug, title, description, showOnHome });
-      res.status(201).json({ statusPage: composeFull(repo, page, kumaClient) });
+      res.status(201).json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
     } catch (err) {
       if (String(err.message).includes('UNIQUE')) {
         return res.status(409).json({ error: 'slug sudah dipakai' });
@@ -134,7 +153,7 @@ export function createStatusPagesRouter(repo, kumaClient) {
     if (!existing) return;
     const { title, description, showOnHome } = req.body || {};
     const page = repo.updatePage(req.params.slug, { title, description, showOnHome });
-    res.json({ statusPage: composeFull(repo, page, kumaClient) });
+    res.json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
   });
 
   // DELETE /api/status-pages/:slug
@@ -153,7 +172,7 @@ export function createStatusPagesRouter(repo, kumaClient) {
       return res.status(400).json({ error: 'name wajib diisi' });
     }
     repo.createGroup(page.id, { name: name.trim(), sortOrder });
-    res.status(201).json({ statusPage: composeFull(repo, page, kumaClient) });
+    res.status(201).json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
   });
 
   // PUT /api/status-pages/:slug/groups/:groupId - ubah nama/urutan grup
@@ -164,7 +183,7 @@ export function createStatusPagesRouter(repo, kumaClient) {
     if (!group) return;
     const { name, sortOrder } = req.body || {};
     repo.updateGroup(group.id, { name, sortOrder });
-    res.json({ statusPage: composeFull(repo, page, kumaClient) });
+    res.json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
   });
 
   // DELETE /api/status-pages/:slug/groups/:groupId - hapus grup (monitor di dalamnya jadi tanpa grup)
@@ -174,7 +193,7 @@ export function createStatusPagesRouter(repo, kumaClient) {
     const group = requireOwnedGroup(page, Number(req.params.groupId), res);
     if (!group) return;
     repo.deleteGroup(group.id);
-    res.json({ statusPage: composeFull(repo, page, kumaClient) });
+    res.json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
   });
 
   // POST /api/status-pages/:slug/monitors - tambah/update monitor dalam status page
@@ -192,7 +211,7 @@ export function createStatusPagesRouter(repo, kumaClient) {
     if (groupId != null && !requireOwnedGroup(page, groupId, res)) return;
 
     repo.addMonitor(page.id, { kumaMonitorId, customLabel, sortOrder, groupId });
-    res.status(201).json({ statusPage: composeFull(repo, page, kumaClient) });
+    res.status(201).json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
   });
 
   // DELETE /api/status-pages/:slug/monitors/:kumaMonitorId

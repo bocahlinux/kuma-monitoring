@@ -2,10 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { fetchHome } from './api';
 import GroupSection from './components/GroupSection';
 import StatRow from './components/StatRow';
+import IncidentsList from './components/IncidentsList';
 import './App.css';
 
 const POLL_INTERVAL_MS = Number(import.meta.env.VITE_POLL_INTERVAL_MS) || 20000;
 const HOME_TITLE = import.meta.env.VITE_HOME_TITLE || 'Status Layanan';
+const MAX_INCIDENTS = 15;
 
 export default function HomePage() {
   const [data, setData] = useState(null);
@@ -29,6 +31,10 @@ export default function HomePage() {
     return () => clearInterval(id);
   }, [load]);
 
+  useEffect(() => {
+    document.title = HOME_TITLE;
+  }, []);
+
   if (error && !data) {
     return (
       <div className="page page--center">
@@ -48,6 +54,10 @@ export default function HomePage() {
 
   const pages = data.statusPages;
   const allMonitors = pages.flatMap((p) => p.monitors);
+  const allIncidents = pages
+    .flatMap((p) => p.incidents.map((inc) => ({ ...inc, monitorLabel: `${inc.monitorLabel} — ${p.title}` })))
+    .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
+    .slice(0, MAX_INCIDENTS);
 
   return (
     <div className="page">
@@ -68,6 +78,8 @@ export default function HomePage() {
           ))}
         </section>
       ))}
+
+      <IncidentsList incidents={allIncidents} />
 
       {error && <p className="error-text error-text--inline">Update terakhir gagal: {error}</p>}
 

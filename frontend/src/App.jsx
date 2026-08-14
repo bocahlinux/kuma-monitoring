@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { fetchStatusPage } from './api';
 import GroupSection from './components/GroupSection';
 import StatRow from './components/StatRow';
+import IncidentsList from './components/IncidentsList';
 import './App.css';
 
 const POLL_INTERVAL_MS = Number(import.meta.env.VITE_POLL_INTERVAL_MS) || 20000;
@@ -29,6 +30,10 @@ export default function App({ slug }) {
     const id = setInterval(load, POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [load]);
+
+  useEffect(() => {
+    if (data?.title) document.title = data.title;
+  }, [data?.title]);
 
   if (error && !data) {
     return (
@@ -61,6 +66,8 @@ export default function App({ slug }) {
           <GroupSection key={g.id ?? 'ungrouped'} group={g} />
         ))}
       </main>
+
+      <IncidentsList incidents={data.incidents} />
 
       {error && <p className="error-text error-text--inline">Update terakhir gagal: {error}</p>}
 
