@@ -20,11 +20,17 @@ services:
       - monitoring-network
     depends_on:
       - mariadb
+    mem_limit: 300m
+    mem_reservation: 128m
 
   mariadb:
     image: mariadb:11
     container_name: monitoring-mariadb
     restart: unless-stopped
+    command:
+      - --innodb-buffer-pool-size=64M
+      - --innodb-log-file-size=16M
+      - --performance-schema=OFF
     environment:
       - TZ=${TZ}
       - MYSQL_DATABASE=${MYSQL_DATABASE}
@@ -35,6 +41,8 @@ services:
       - ./data/mariadb:/var/lib/mysql
     networks:
       - monitoring-network
+    mem_limit: 256m
+    mem_reservation: 128m
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -43,6 +51,8 @@ services:
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     networks:
       - monitoring-network
+    mem_limit: 64m
+    mem_reservation: 32m
 
   kuma-status-backend:
     build:
@@ -69,6 +79,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    mem_limit: 128m
+    mem_reservation: 64m
     # Tidak ada "ports:" -- backend ini cuma diakses lewat internal docker network
     # (monitoring-network) dan diekspos ke luar lewat cloudflared tunnel, sama seperti
     # rekomendasi keamanan yang sudah kamu pakai untuk Kuma & mariadb.
