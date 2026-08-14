@@ -87,6 +87,32 @@ services:
     # (monitoring-network) dan diekspos ke luar lewat cloudflared tunnel, sama seperti
     # rekomendasi keamanan yang sudah kamu pakai untuk Kuma & mariadb.
 
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${FRONTEND_API_BASE_URL}
+        VITE_STATUS_PAGE_SLUG: ${FRONTEND_STATUS_PAGE_SLUG:-samsat}
+        VITE_POLL_INTERVAL_MS: ${FRONTEND_POLL_INTERVAL_MS:-20000}
+        VITE_UPTIME_PERIOD_KEY: ${FRONTEND_UPTIME_PERIOD_KEY:-24}
+    container_name: kuma-status-frontend
+    restart: unless-stopped
+    networks:
+      - monitoring-network
+    depends_on:
+      - kuma-status-backend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    mem_limit: 32m
+    mem_reservation: 16m
+    # Sama kayak backend: tanpa "ports:", diakses lewat cloudflared tunnel saja.
+    # NOTE: VITE_* di atas di-bake ke file statis SAAT BUILD, bukan runtime -- kalau
+    # ganti FRONTEND_API_BASE_URL/slug/dll di .env, wajib rebuild ulang image-nya
+    # ("docker compose up -d --build frontend"), bukan cukup restart.
+
 networks:
   monitoring-network:
     name: monitoring-network

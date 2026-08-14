@@ -10,7 +10,8 @@ Satu stack Docker Compose berisi Uptime Kuma, MariaDB, Cloudflare Tunnel, dan ba
 │   ├── uptime-kuma/
 │   ├── mariadb/
 │   └── kuma-status-backend/
-└── kuma-status-backend/       # source code backend perantara
+├── kuma-status-backend/       # source code backend perantara
+└── frontend/                  # source code status page publik (React + Vite)
 ```
 
 ## Deploy ke VPS
@@ -36,20 +37,30 @@ Semua data persisten (database Kuma, MariaDB, SQLite custom status page) tersimp
 
 ## Akses dari luar (Cloudflare Tunnel)
 
-`kuma-status-backend` sengaja **tidak** publish port ke host (`ports:` dikosongkan) — hanya bisa diakses dari dalam `monitoring-network`, termasuk oleh container `monitoring-cloudflared` yang sudah ada. Supaya frontend bisa mengaksesnya dari internet:
+`kuma-status-backend` dan `frontend` sengaja **tidak** publish port ke host (`ports:` dikosongkan) — hanya bisa diakses dari dalam `monitoring-network`, termasuk oleh container `monitoring-cloudflared` yang sudah ada. Butuh **dua** Public Hostname terpisah di tunnel yang sama:
 
 1. Buka **Cloudflare Zero Trust dashboard → Networks → Tunnels**, pilih tunnel yang dipakai `monitoring-cloudflared`.
-2. Tambahkan **Public Hostname** baru, misal `status-api.domainkamu.com`, dengan **Service** mengarah ke `http://kuma-status-backend:4000` (nama container + port internal, bukan IP).
-3. Frontend fetch ke `https://status-api.domainkamu.com/api/...` dan connect WebSocket ke `wss://status-api.domainkamu.com/ws?apiKey=...`.
+2. Tambahkan Public Hostname buat backend, misal `kuma-status.domainkamu.com` → `http://kuma-status-backend:4000`.
+3. Tambahkan Public Hostname lagi buat frontend (status page publik), misal `status.domainkamu.com` → `http://kuma-status-frontend:80`.
 
-Kalau suatu saat butuh akses langsung tanpa tunnel (misal debug), tambahkan `ports: ["<ip-vps>:4000:4000"]` di service `kuma-status-backend` pada `docker-compose.yml`.
+Kalau suatu saat butuh akses langsung tanpa tunnel (misal debug), tambahkan `ports: ["<ip-vps>:<port>:<port>"]` di service terkait pada `docker-compose.yml`.
+
+## Frontend (status page publik)
+
+`frontend/` adalah React (Vite) yang consume `GET /api/status-pages/:slug` (endpoint publik, tanpa API key) dan polling berkala. Konfigurasinya (`FRONTEND_API_BASE_URL`, `FRONTEND_STATUS_PAGE_SLUG`, dst di `.env`) **di-bake ke file statis saat build**, bukan dibaca saat runtime — jadi tiap ganti nilainya wajib rebuild:
+
+```bash
+docker compose up -d --build frontend
+```
+
+Detail komponen & cara dev lokal ada di [frontend/README.md](frontend/README.md).
 
 ## Update / redeploy
 
 ```bash
 cd /opt/kuma-monitoring
 git pull
-docker compose up -d --build kuma-status-backend
+docker compose up -d --build
 ```
 
 ## Dokumentasi backend & API
