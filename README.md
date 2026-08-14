@@ -15,13 +15,15 @@ Satu stack Docker Compose berisi Uptime Kuma, MariaDB, Cloudflare Tunnel, dan ba
 
 ## Deploy ke VPS
 
-Taruh repo ini di `/opt/monitoring` di VPS. `/opt` adalah konvensi standar Linux (FHS) untuk software/stack yang berdiri sendiri di luar package manager, tidak terikat ke home directory user tertentu — cocok untuk service yang dikelola via systemd/root/deploy user, dan tetap konsisten kalau nanti akun user berganti. Hindari `/home/<user>` supaya stack tidak "menempel" ke akun personal.
+Taruh repo ini di `/opt/kuma-monitoring` di VPS. `/opt` adalah konvensi standar Linux (FHS) untuk software/stack yang berdiri sendiri di luar package manager, tidak terikat ke home directory user tertentu — cocok untuk service yang dikelola via systemd/root/deploy user, dan tetap konsisten kalau nanti akun user berganti. Hindari `/home/<user>` supaya stack tidak "menempel" ke akun personal.
+
+**Penting:** pastikan `git clone` diarahkan langsung ke `/opt/kuma-monitoring` (bukan `git clone <url>` tanpa target sambil `cd`-nya di `/opt`), supaya nama foldernya bukan hasil tebakan Git dari nama repo. `docker-compose.yml` di repo ini juga sudah mengunci `name: kuma-monitoring` di baris paling atas, jadi Compose selalu memakai nama project yang sama persis **apa pun nama folder tempat kamu menjalankannya** — kalau suatu saat repo ini ke-clone lagi di folder lain, Compose tidak akan bingung dan mencoba bikin container baru yang bentrok nama dengan yang sudah jalan.
 
 ```bash
-sudo mkdir -p /opt/monitoring
-sudo chown $USER:$USER /opt/monitoring
-git clone https://github.com/bocahlinux/kuma-monitoring.git /opt/monitoring
-cd /opt/monitoring
+sudo mkdir -p /opt/kuma-monitoring
+sudo chown $USER:$USER /opt/kuma-monitoring
+git clone https://github.com/bocahlinux/kuma-monitoring.git /opt/kuma-monitoring
+cd /opt/kuma-monitoring
 
 cp .env.example .env
 nano .env   # isi TZ, KUMA_USERNAME/PASSWORD, MYSQL_*, CLOUDFLARE_TUNNEL_TOKEN, dst
@@ -45,7 +47,7 @@ Kalau suatu saat butuh akses langsung tanpa tunnel (misal debug), tambahkan `por
 ## Update / redeploy
 
 ```bash
-cd /opt/monitoring
+cd /opt/kuma-monitoring
 git pull
 docker compose up -d --build kuma-status-backend
 ```
