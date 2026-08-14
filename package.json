@@ -1,0 +1,22 @@
+{
+  "name": "kuma-status-backend",
+  "version": "1.0.0",
+  "description": "Backend perantara (BFF) antara Uptime Kuma dan frontend status page custom",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "socket.io-client": "^4.8.1",
+    "ws": "^8.18.0"
+  }
+}

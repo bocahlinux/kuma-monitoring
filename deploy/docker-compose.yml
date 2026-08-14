@@ -1,0 +1,71 @@
+services:
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: uptime-kuma
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+    ports:
+      - "100.83.41.88:3001:3001"
+    volumes:
+      - ./data/uptime-kuma:/app/data
+    networks:
+      - monitoring-network
+
+  mariadb:
+    image: mariadb:11
+    container_name: monitoring-mariadb
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ./data/mariadb:/var/lib/mysql
+    networks:
+      - monitoring-network
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: monitoring-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - monitoring-network
+
+  kuma-status-backend:
+    build:
+      context: ./kuma-status-backend
+    container_name: kuma-status-backend
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ}
+      - PORT=4000
+      - KUMA_BASE_URL=http://uptime-kuma:3001
+      - KUMA_USERNAME=${KUMA_USERNAME}
+      - KUMA_PASSWORD=${KUMA_PASSWORD}
+      - API_KEY=${API_KEY}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - DB_PATH=/app/data/app.db
+    volumes:
+      - ./data/kuma-status-backend:/app/data
+    networks:
+      - monitoring-network
+    depends_on:
+      - uptime-kuma
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    # Tidak ada "ports:" -- backend ini cuma diakses lewat internal docker network
+    # (monitoring-network) dan diekspos ke luar lewat cloudflared tunnel, sama seperti
+    # rekomendasi keamanan yang sudah kamu pakai untuk Kuma & mariadb.
+
+networks:
+  monitoring-network:
+    name: monitoring-network
+    driver: bridge
