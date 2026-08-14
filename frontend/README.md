@@ -24,7 +24,7 @@ npm run dev
 
 | Variabel | Keterangan |
 |---|---|
-| `VITE_API_BASE_URL` | Base URL backend, tanpa trailing slash. Kosongkan kalau satu domain dengan frontend. |
+| `VITE_API_BASE_URL` | Kosongkan buat production (nginx yang reverse-proxy ke backend, lihat `nginx.conf`). Isi kalau dev lokal langsung ke backend tanpa proxy, misal `http://localhost:4000`. |
 | `VITE_STATUS_PAGE_SLUG` | Slug status page yang mau ditampilkan (dari `POST /api/status-pages` di backend) |
 | `VITE_POLL_INTERVAL_MS` | Interval polling, default 20000 (20 detik) |
 | `VITE_UPTIME_PERIOD_KEY` | Key periode uptime yang dipakai sebagai badge persentase (default `"24"`) — cek response backend buat lihat key apa saja yang tersedia |
