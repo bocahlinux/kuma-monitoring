@@ -1,19 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchStatusPage } from './api';
 import GroupSection from './components/GroupSection';
+import StatRow from './components/StatRow';
 import './App.css';
 
 const POLL_INTERVAL_MS = Number(import.meta.env.VITE_POLL_INTERVAL_MS) || 20000;
-
-function overallBanner(status) {
-  if (status === 'up') {
-    return { icon: '✓', text: 'Semua layanan normal', className: 'banner banner--up' };
-  }
-  if (status === 'down') {
-    return { icon: '✕', text: 'Ada gangguan pada sebagian layanan', className: 'banner banner--down' };
-  }
-  return { icon: '?', text: 'Status belum diketahui', className: 'banner banner--unknown' };
-}
 
 export default function App({ slug }) {
   const [data, setData] = useState(null);
@@ -56,8 +47,6 @@ export default function App({ slug }) {
     );
   }
 
-  const banner = overallBanner(data.overallStatus);
-
   return (
     <div className="page">
       <header className="page__header">
@@ -65,12 +54,7 @@ export default function App({ slug }) {
         {data.description && <p className="page__description">{data.description}</p>}
       </header>
 
-      <div className={banner.className}>
-        <span className="banner__icon" aria-hidden="true">
-          {banner.icon}
-        </span>
-        {banner.text}
-      </div>
+      <StatRow monitors={data.monitors} />
 
       <main>
         {data.groups.map((g) => (

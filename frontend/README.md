@@ -13,11 +13,13 @@ Kedua endpoint publik (`/api/home`, `/api/status-pages/:slug`) sengaja tanpa API
 ## Struktur
 
 - `src/api.js` — fetch ke backend (status page publik)
-- `src/App.jsx` — halaman `/<slug>`: state, polling, banner status satu kategori
+- `src/App.jsx` — halaman `/<slug>`: state, polling, satu kategori
 - `src/HomePage.jsx` — halaman `/`: fetch `/api/home`, render tiap status page sebagai section kategori
+- `src/stats.js` — hitung jumlah terhubung/terputus/total dari daftar monitor
+- `src/components/StatRow.jsx` — kartu ringkasan (Terhubung/Terputus/Total monitor), dipakai `App` maupun `HomePage`
 - `src/components/GroupSection.jsx` — satu Group (header + daftar monitornya), dipakai `App` maupun `HomePage`; tanpa header kalau grup-nya `null` (monitor belum di-assign)
-- `src/components/MonitorRow.jsx` — satu baris monitor (badge persentase + nama)
-- `src/components/HeartbeatBar.jsx` — bar chart heartbeat (maks 50 terakhir, dari backend)
+- `src/components/MonitorRow.jsx` — satu baris monitor: dot status + nama + persentase uptime + bar heartbeat sejajar
+- `src/components/HeartbeatBar.jsx` — bar heartbeat inline di samping nama; kalau nggak muat, cell tertua terpotong rapi di sisi kiri (bukan bikin baris meluber)
 - `src/statusMeta.js` — ikon + label Indonesia per status (`up`/`down`/`pending`/`maintenance`/`unknown`), satu sumber dipakai halaman publik & admin
 - `src/admin/adminApi.js` — fetch ke endpoint admin backend, kirim header `x-api-key` (disimpan di `sessionStorage`, hilang begitu tab ditutup)
 - `src/admin/AdminApp.jsx` — orchestrator halaman admin (login → list status page → editor)

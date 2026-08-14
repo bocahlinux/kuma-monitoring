@@ -1,5 +1,5 @@
 import HeartbeatBar from './HeartbeatBar';
-import { STATUS_ICON, STATUS_LABEL_ID } from '../statusMeta';
+import { STATUS_LABEL_ID } from '../statusMeta';
 
 const UPTIME_PERIOD_KEY = import.meta.env.VITE_UPTIME_PERIOD_KEY || '24';
 
@@ -19,20 +19,16 @@ function formatPercent(fraction) {
 export default function MonitorRow({ monitor }) {
   const { label, live } = monitor;
   const statusLabel = live.statusLabel || 'unknown';
+  const statusText = STATUS_LABEL_ID[statusLabel] || STATUS_LABEL_ID.unknown;
   const fraction = getUptimeFraction(live.uptime);
 
   return (
     <div className="monitor-row">
-      <div className="monitor-row__top">
-        <span
-          className={`status-badge status-badge--${statusLabel}`}
-          title={STATUS_LABEL_ID[statusLabel] || STATUS_LABEL_ID.unknown}
-        >
-          <span aria-hidden="true">{STATUS_ICON[statusLabel] || STATUS_ICON.unknown}</span>
-          {fraction != null ? formatPercent(fraction) : (STATUS_LABEL_ID[statusLabel] || statusLabel)}
-        </span>
-        <span className="monitor-row__name">{label}</span>
-      </div>
+      <span className={`status-dot status-dot--${statusLabel}`} title={statusText}>
+        <span className="sr-only">{statusText}</span>
+      </span>
+      <span className="monitor-row__name">{label}</span>
+      {fraction != null && <span className="monitor-row__uptime">{formatPercent(fraction)}</span>}
       <HeartbeatBar heartbeats={live.heartbeats || []} />
     </div>
   );
