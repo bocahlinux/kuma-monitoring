@@ -1,13 +1,20 @@
 # frontend
 
-Status page publik — React (Vite), consume `GET /api/status-pages/:slug` dari [kuma-status-backend](../kuma-status-backend) lewat polling berkala. Endpoint itu sengaja tanpa API key karena memang dimaksudkan buat dilihat publik.
+React (Vite) berisi dua halaman:
+
+- **`/`** — status page publik, consume `GET /api/status-pages/:slug` dari [kuma-status-backend](../kuma-status-backend) lewat polling berkala. Endpoint itu sengaja tanpa API key karena memang dimaksudkan buat dilihat publik.
+- **`/admin`** — kelola status page (buat/hapus, atur monitor mana yang ditampilkan, label, urutan) lewat UI, tanpa perlu `curl` manual. Login pakai `API_KEY` yang sama dengan backend.
 
 ## Struktur
 
-- `src/api.js` — fetch ke backend
-- `src/App.jsx` — state, polling, banner status keseluruhan
+- `src/api.js` — fetch ke backend (status page publik)
+- `src/App.jsx` — state, polling, banner status keseluruhan (halaman publik)
 - `src/components/MonitorRow.jsx` — satu baris monitor (badge persentase + nama)
 - `src/components/HeartbeatBar.jsx` — bar chart heartbeat (maks 50 terakhir, dari backend)
+- `src/admin/adminApi.js` — fetch ke endpoint admin backend, kirim header `x-api-key` (disimpan di `sessionStorage`, hilang begitu tab ditutup)
+- `src/admin/AdminApp.jsx` — orchestrator halaman admin (login → list status page → editor)
+- `src/admin/components/` — `Login`, `StatusPageList`, `StatusPageEditor`
+- `src/main.jsx` — routing sederhana berbasis `window.location.pathname` (`/admin` vs selain itu), tanpa react-router karena cuma dua halaman
 
 ## Development lokal
 
@@ -35,4 +42,8 @@ npm run dev
 npm run build   # -> dist/
 ```
 
-`Dockerfile` di sini multi-stage: build dengan Node, lalu di-serve pakai nginx (`nginx.conf`, SPA fallback ke `index.html`). Deploy production diatur lewat `docker-compose.yml` di root repo — lihat [README di root](../README.md#frontend-status-page-publik).
+`Dockerfile` di sini multi-stage: build dengan Node, lalu di-serve pakai nginx (`nginx.conf`, SPA fallback ke `index.html`, plus reverse-proxy `/api/` ke backend). Deploy production diatur lewat `docker-compose.yml` di root repo — lihat [README di root](../README.md#frontend-status-page-publik).
+
+## Keamanan halaman `/admin`
+
+`/admin` **tidak dilindungi login system beneran** — cuma modal "masukkan API key" yang disimpan di `sessionStorage` browser lalu dikirim sebagai header `x-api-key` ke tiap request. Proteksi sebenarnya ada di backend (Express middleware `apiKeyAuth`): tanpa key yang cocok, semua endpoint admin balas `401`. Siapa pun yang tahu URL `/admin` bisa membuka halamannya, tapi tidak bisa melakukan apa-apa tanpa API key yang benar. Ini cukup buat kebutuhan satu admin/tim kecil — kalau nanti butuh multi-user dengan hak akses berbeda, ini perlu diganti sistem auth yang lebih proper (bukan sekadar shared API key).

@@ -41,29 +41,18 @@ Semua data persisten (database Kuma, MariaDB, SQLite custom status page) tersimp
 
 1. Buka **Cloudflare Zero Trust dashboard → Networks → Tunnels**, pilih tunnel yang dipakai `monitoring-cloudflared`.
 2. Public Hostname domain kamu (misal `kuma-status.domainkamu.com`) arahkan ke `http://kuma-status-frontend:80`. Kalau sebelumnya domain ini sempat diarahkan ke `kuma-status-backend:4000`, **ubah Service-nya** ke `kuma-status-frontend:80`.
-3. **Backend tidak dapat Public Hostname sama sekali** — nginx di container `frontend` yang reverse-proxy `GET /api/status-pages/:slug` ke `kuma-status-backend:4000` lewat docker network internal (lihat `frontend/nginx.conf`). Endpoint admin backend (kelola status page, `GET /api/monitors` mentah) jadi otomatis tidak bisa diakses dari internet sama sekali, cuma dari dalam VPS.
+3. **Backend tidak dapat Public Hostname sendiri** — nginx di container `frontend` yang reverse-proxy semua `/api/*` ke `kuma-status-backend:4000` lewat docker network internal (lihat `frontend/nginx.conf`). Proteksinya tetap ada di backend: `GET /api/status-pages/:slug` publik (dipakai halaman `/`), endpoint lainnya (kelola status page, `GET /api/monitors` mentah, dipakai halaman `/admin`) wajib header `x-api-key` — salah/tanpa key otomatis dapat `401` dari backend, siapa pun yang tahu URL-nya tetap nggak bisa ngapa-ngapain tanpa API key yang benar.
 
-Kalau suatu saat butuh akses langsung tanpa tunnel (misal debug), tambahkan `ports: ["<ip-vps>:<port>:<port>"]` di service terkait pada `docker-compose.yml`.
+Kalau suatu saat butuh akses backend langsung tanpa lewat frontend (misal debug), backend juga sudah di-bind ke IP Tailscale di `docker-compose.yml` (`100.83.41.88:4000`) — lihat service `kuma-status-backend`.
 
-### Menjalankan perintah admin backend (curl) setelah backend tidak diekspos
+## Frontend (status page publik + admin)
 
-Karena backend nggak lagi punya domain publik, jalankan curl admin (`POST`/`PUT`/`DELETE /api/status-pages/*`, `GET /api/monitors`) **dari dalam VPS**, lewat `docker exec`:
+`frontend/` adalah React (Vite) dengan dua halaman:
 
-```bash
-docker exec kuma-status-backend wget -qO- --header="x-api-key: <API_KEY>" http://localhost:4000/api/monitors
-```
+- **`/`** — status page publik, consume `GET /api/status-pages/:slug` (tanpa API key, di-proxy nginx ke backend) lewat polling berkala.
+- **`/admin`** — kelola status page (buat/hapus, atur monitor, label, urutan) lewat UI, login pakai `API_KEY` yang sama dengan backend. Detail keamanannya ada di [frontend/README.md](frontend/README.md#keamanan-halaman-admin).
 
-Atau untuk request `POST`/body JSON, pakai `curl` (kalau image-nya belum ada `curl`, `wget` bawaan Node base image bisa dipakai dengan `--post-data`):
-
-```bash
-docker exec kuma-status-backend wget -qO- --header="x-api-key: <API_KEY>" --header="Content-Type: application/json" \
-  --post-data '{"kumaMonitorId": 1, "customLabel": "01-palangka-raya", "sortOrder": 1}' \
-  http://localhost:4000/api/status-pages/samsat/monitors
-```
-
-## Frontend (status page publik)
-
-`frontend/` adalah React (Vite) yang consume `GET /api/status-pages/:slug` (endpoint publik, tanpa API key, di-proxy nginx ke backend) dan polling berkala. Konfigurasinya (`FRONTEND_API_BASE_URL`, `FRONTEND_STATUS_PAGE_SLUG`, dst di `.env`) **di-bake ke file statis saat build**, bukan dibaca saat runtime — jadi tiap ganti nilainya wajib rebuild:
+Konfigurasi frontend (`FRONTEND_API_BASE_URL`, `FRONTEND_STATUS_PAGE_SLUG`, dst di `.env`) **di-bake ke file statis saat build**, bukan dibaca saat runtime — jadi tiap ganti nilainya wajib rebuild:
 
 ```bash
 docker compose up -d --build frontend
