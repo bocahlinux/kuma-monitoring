@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 import { adminApi } from '../adminApi';
 import { STATUS_ICON, STATUS_LABEL_ID } from '../../statusMeta';
 
-export default function StatusPageEditor({ slug, onBack }) {
+const SLUG_RE = /^[a-z0-9-]+$/;
+
+export default function StatusPageEditor({ slug, onBack, onSlugChanged }) {
   const [page, setPage] = useState(null);
   const [allMonitors, setAllMonitors] = useState([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [slugDraft, setSlugDraft] = useState('');
   const [addMonitorId, setAddMonitorId] = useState('');
   const [addLabel, setAddLabel] = useState('');
   const [addGroupId, setAddGroupId] = useState('');
@@ -22,6 +25,7 @@ export default function StatusPageEditor({ slug, onBack }) {
     setAllMonitors(monitors);
     setTitle(p.title);
     setDescription(p.description || '');
+    setSlugDraft(p.slug);
     setLabelDrafts(Object.fromEntries(p.monitors.map((m) => [m.kumaMonitorId, m.label])));
     setGroupNameDrafts(Object.fromEntries(p.groups.filter((g) => g.id != null).map((g) => [g.id, g.name])));
   };
@@ -53,8 +57,32 @@ export default function StatusPageEditor({ slug, onBack }) {
     ? Math.max(...page.monitors.map((m) => m.sortOrder)) + 1
     : 1;
 
-  const saveDetails = () =>
-    runAction(() => adminApi.updateStatusPage(slug, { title, description }));
+  // Nggak pakai runAction di sini -- kalau slug berubah, memanggil load() dengan slug
+  // LAMA (closure masih pegang prop lama sebelum parent re-render) bakal 404. Solusinya:
+  // beri tahu parent lewat onSlugChanged supaya prop `slug` berubah, biar useEffect di
+  // atas yang otomatis reload pakai slug BARU.
+  const saveDetails = async () => {
+    const trimmedSlug = slugDraft.trim();
+    if (!SLUG_RE.test(trimmedSlug)) {
+      setError('Slug cuma boleh huruf kecil, angka, dan "-"');
+      return;
+    }
+    const renaming = trimmedSlug !== slug;
+    setBusy(true);
+    setError(null);
+    try {
+      await adminApi.updateStatusPage(slug, { title, description, slug: trimmedSlug });
+      if (renaming) {
+        onSlugChanged?.(trimmedSlug);
+      } else {
+        await load();
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const selectMonitorToAdd = (id) => {
     setAddMonitorId(id);
@@ -170,6 +198,15 @@ export default function StatusPageEditor({ slug, onBack }) {
             Deskripsi
             <input value={description} onChange={(e) => setDescription(e.target.value)} />
           </label>
+          <label>
+            Slug (URL: /{slugDraft || '...'})
+            <input value={slugDraft} onChange={(e) => setSlugDraft(e.target.value)} />
+          </label>
+          {slugDraft.trim() !== slug && (
+            <p className="admin-dim">
+              Link lama (/{slug}) akan berhenti berfungsi setelah slug diganti.
+            </p>
+          )}
           <button className="btn btn--primary" onClick={saveDetails} disabled={busy}>
             Simpan detail
           </button>

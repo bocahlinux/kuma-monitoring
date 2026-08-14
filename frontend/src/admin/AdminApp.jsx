@@ -40,7 +40,13 @@ export default function AdminApp() {
   };
 
   if (selectedSlug) {
-    return <StatusPageEditor slug={selectedSlug} onBack={() => { setSelectedSlug(null); loadPages(); }} />;
+    return (
+      <StatusPageEditor
+        slug={selectedSlug}
+        onBack={() => { setSelectedSlug(null); loadPages(); }}
+        onSlugChanged={setSelectedSlug}
+      />
+    );
   }
 
   return (

@@ -147,13 +147,20 @@ export function createStatusPagesRouter(repo, incidentsRepo, kumaClient) {
     }
   });
 
-  // PUT /api/status-pages/:slug - update title/description/showOnHome
+  // PUT /api/status-pages/:slug - update title/description/showOnHome/slug
   router.put('/status-pages/:slug', (req, res) => {
     const existing = requirePage(req, res);
     if (!existing) return;
-    const { title, description, showOnHome } = req.body || {};
-    const page = repo.updatePage(req.params.slug, { title, description, showOnHome });
-    res.json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
+    const { title, description, showOnHome, slug } = req.body || {};
+    try {
+      const page = repo.updatePage(req.params.slug, { title, description, showOnHome, slug });
+      res.json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
+    } catch (err) {
+      if (String(err.message).includes('UNIQUE')) {
+        return res.status(409).json({ error: 'slug sudah dipakai' });
+      }
+      res.status(400).json({ error: err.message });
+    }
   });
 
   // DELETE /api/status-pages/:slug

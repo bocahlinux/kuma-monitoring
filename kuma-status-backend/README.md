@@ -58,7 +58,7 @@ x-api-key: <API_KEY>
 | GET | `/api/monitors/hostname/:hostname` | API key | Cari monitor berdasarkan hostname (partial match) |
 | GET | `/api/status-pages` | API key | List semua custom status page (admin, termasuk yang `showOnHome`-nya nonaktif) |
 | POST | `/api/status-pages` | API key | Buat status page baru — body: `{ slug, title, description, showOnHome? }` (default `showOnHome: true`) |
-| PUT | `/api/status-pages/:slug` | API key | Update title/description/showOnHome |
+| PUT | `/api/status-pages/:slug` | API key | Update title/description/showOnHome/slug — body: `{ title?, description?, showOnHome?, slug? }`. Ganti `slug` cuma ubah URL akses (`/<slug>` lama langsung 404), relasi monitor/grup nggak kepengaruh karena dikaitkan lewat id numerik internal, bukan slug. |
 | DELETE | `/api/status-pages/:slug` | API key | Hapus status page |
 | POST | `/api/status-pages/:slug/groups` | API key | Buat grup baru di status page ini (fitur "Groups" ala Kuma) — body: `{ name, sortOrder? }` |
 | PUT | `/api/status-pages/:slug/groups/:groupId` | API key | Ubah nama/urutan grup — body: `{ name?, sortOrder? }` |

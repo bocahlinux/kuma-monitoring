@@ -83,21 +83,29 @@ export function createStatusPagesRepo(db) {
       return this.getPageBySlug(slug) ?? { id: info.lastInsertRowid, slug, title, description };
     },
 
-    updatePage(slug, { title, description, showOnHome }) {
+    // `slug` di argumen kedua (kalau diisi) adalah slug BARU -- slug lama (argumen
+    // pertama) tetap dipakai buat nyari baris mana yang diupdate (WHERE slug = ?),
+    // aman karena semua relasi (monitor, grup) nunjuk ke id numerik, bukan slug.
+    updatePage(currentSlug, { title, description, showOnHome, slug: newSlug }) {
+      if (newSlug !== undefined && !SLUG_RE.test(newSlug)) {
+        throw new Error('slug hanya boleh huruf kecil, angka, dan tanda "-"');
+      }
       db.prepare(
         `UPDATE status_pages
          SET title = COALESCE(?, title),
              description = COALESCE(?, description),
              show_on_home = COALESCE(?, show_on_home),
+             slug = COALESCE(?, slug),
              updated_at = datetime('now')
          WHERE slug = ?`
       ).run(
         title ?? null,
         description ?? null,
         showOnHome === undefined ? null : toDbBool(showOnHome),
-        slug
+        newSlug ?? null,
+        currentSlug
       );
-      return this.getPageBySlug(slug);
+      return this.getPageBySlug(newSlug ?? currentSlug);
     },
 
     deletePage(slug) {
