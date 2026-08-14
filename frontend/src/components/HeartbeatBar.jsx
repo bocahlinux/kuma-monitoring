@@ -1,21 +1,21 @@
-const STATUS_COLOR = {
-  up: '#16a34a',
-  down: '#dc2626',
-  pending: '#d97706',
-  maintenance: '#2563eb',
-  unknown: '#4b5563',
+const STATUS_VAR = {
+  up: 'var(--status-good)',
+  down: 'var(--status-critical)',
+  pending: 'var(--status-warning)',
+  maintenance: 'var(--border-strong)',
+  unknown: 'var(--border)',
 };
 
 export default function HeartbeatBar({ heartbeats }) {
   const cells = heartbeats.length ? heartbeats : Array.from({ length: 50 }, () => null);
 
   return (
-    <div className="heartbeat-bar">
+    <div className="heartbeat-bar" role="img" aria-label="Riwayat heartbeat">
       {cells.map((hb, i) => (
         <span
           key={i}
           className="heartbeat-bar__cell"
-          style={{ background: hb ? STATUS_COLOR[hb.statusLabel] || STATUS_COLOR.unknown : STATUS_COLOR.unknown }}
+          style={{ background: hb ? STATUS_VAR[hb.statusLabel] || STATUS_VAR.unknown : STATUS_VAR.unknown }}
           title={hb ? `${hb.statusLabel} — ${hb.time}` : 'Belum ada data'}
         />
       ))}

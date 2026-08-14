@@ -1,23 +1,87 @@
 :root {
-  color-scheme: dark;
-  --bg: #0b0f19;
-  --surface: #131a2a;
-  --text: #e5e7eb;
-  --text-dim: #9ca3af;
-  --border: #1f2937;
+  color-scheme: light dark;
+
+  --page-bg: #f9f9f7;
+  --surface: #fcfcfb;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --border: #e1e0d9;
+  --border-strong: #c3c2b7;
+
+  /* Status palette -- fixed, never reused for anything else. Mode-invariant per spec. */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  /* UI accent (admin panel buttons/links) -- categorical slot 1, not used as a data series here. */
+  --accent: #2a78d6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page-bg: #0d0d0d;
+    --surface: #1a1a19;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --border: #2c2c2a;
+    --border-strong: #383835;
+    --accent: #3987e5;
+  }
 }
 
 * {
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
 }
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--page-bg);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Dipakai halaman publik (MonitorRow) & admin (StatusPageEditor) -- satu sumber warna status. */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-badge--up {
+  background: color-mix(in srgb, var(--status-good) 16%, var(--surface));
+  color: var(--status-good);
+}
+.status-badge--down {
+  background: color-mix(in srgb, var(--status-critical) 16%, var(--surface));
+  color: var(--status-critical);
+}
+.status-badge--pending {
+  background: color-mix(in srgb, var(--status-warning) 22%, var(--surface));
+  color: color-mix(in srgb, var(--status-warning) 65%, var(--text-primary));
+}
+.status-badge--maintenance {
+  background: var(--border);
+  color: var(--text-secondary);
+}
+.status-badge--unknown {
+  background: var(--border);
+  color: var(--text-muted);
 }

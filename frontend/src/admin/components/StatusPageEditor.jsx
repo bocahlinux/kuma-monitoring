@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { adminApi } from '../adminApi';
+import { STATUS_ICON, STATUS_LABEL_ID } from '../../statusMeta';
 
 export default function StatusPageEditor({ slug, onBack }) {
   const [page, setPage] = useState(null);
@@ -123,8 +124,9 @@ export default function StatusPageEditor({ slug, onBack }) {
         <ul className="admin-list">
           {sorted.map((m, i) => (
             <li key={m.kumaMonitorId} className="admin-list__item admin-list__item--monitor">
-              <span className={`badge badge--${m.live.statusLabel || 'unknown'}`}>
-                {m.live.statusLabel || 'unknown'}
+              <span className={`status-badge status-badge--${m.live.statusLabel || 'unknown'}`}>
+                <span aria-hidden="true">{STATUS_ICON[m.live.statusLabel] || STATUS_ICON.unknown}</span>
+                {STATUS_LABEL_ID[m.live.statusLabel] || STATUS_LABEL_ID.unknown}
               </span>
               <input
                 className="admin-list__label-input"

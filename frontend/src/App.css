@@ -1,141 +1,187 @@
 .page {
   max-width: 720px;
   margin: 0 auto;
-  padding: 32px 16px 64px;
+  padding: 40px 20px 64px;
 }
 
 .page--center {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 14px;
+  padding: 20px;
+  text-align: center;
 }
 
-.page__header h1 {
-  font-size: 1.5rem;
-  margin: 0 0 4px;
-}
-
-.page__description {
-  color: var(--text-dim);
-  margin: 0 0 20px;
-}
-
-.banner {
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-weight: 600;
+.page__header {
   margin-bottom: 24px;
 }
 
+.page__header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+}
+
+.page__description {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.page__loading-text {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--text-secondary);
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 28px;
+  border: 1px solid transparent;
+}
+
+.banner__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
 .banner--up {
-  background: rgba(22, 163, 74, 0.15);
-  color: #4ade80;
+  background: color-mix(in srgb, var(--status-good) 12%, var(--surface));
+  color: var(--status-good);
+  border-color: color-mix(in srgb, var(--status-good) 28%, transparent);
+}
+.banner--up .banner__icon {
+  background: var(--status-good);
+  color: #fff;
 }
 
 .banner--down {
-  background: rgba(220, 38, 38, 0.15);
-  color: #f87171;
+  background: color-mix(in srgb, var(--status-critical) 12%, var(--surface));
+  color: var(--status-critical);
+  border-color: color-mix(in srgb, var(--status-critical) 28%, transparent);
+}
+.banner--down .banner__icon {
+  background: var(--status-critical);
+  color: #fff;
 }
 
 .banner--unknown {
-  background: rgba(75, 85, 99, 0.2);
-  color: #9ca3af;
+  background: var(--surface);
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+.banner--unknown .banner__icon {
+  background: var(--border-strong);
+  color: var(--surface);
 }
 
 .monitor-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .monitor-row {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 16px;
+  border-radius: 12px;
+  padding: 14px 16px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s ease;
 }
 
-.monitor-row__info {
+.monitor-row:hover {
+  border-color: var(--border-strong);
+}
+
+.monitor-row__top {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 180px;
 }
 
 .monitor-row__name {
-  font-weight: 500;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 56px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.badge--up {
-  background: #16a34a;
-  color: #ecfdf5;
-}
-
-.badge--down {
-  background: #dc2626;
-  color: #fef2f2;
-}
-
-.badge--pending {
-  background: #d97706;
-  color: #fffbeb;
-}
-
-.badge--maintenance {
-  background: #2563eb;
-  color: #eff6ff;
-}
-
-.badge--unknown {
-  background: #4b5563;
-  color: #f3f4f6;
 }
 
 .heartbeat-bar {
   display: flex;
   gap: 2px;
-  flex: 1;
-  min-width: 200px;
-  justify-content: flex-end;
+  width: 100%;
 }
 
 .heartbeat-bar__cell {
-  width: 6px;
+  flex: 1 1 auto;
+  min-width: 2px;
+  max-width: 7px;
   height: 24px;
-  border-radius: 2px;
-  flex-shrink: 0;
+  border-radius: 3px;
 }
 
 .error-text {
-  color: #f87171;
+  color: var(--status-critical);
 }
 
 .error-text--inline {
   margin-top: 16px;
   font-size: 0.85rem;
+  text-align: center;
 }
 
 .page__footer {
   margin-top: 32px;
   text-align: center;
-  color: var(--text-dim);
+  color: var(--text-muted);
   font-size: 0.8rem;
+}
+
+@media (max-width: 400px) {
+  .page {
+    padding: 28px 14px 48px;
+  }
+
+  .page__header h1 {
+    font-size: 1.35rem;
+  }
+
+  .monitor-row__name {
+    font-size: 0.88rem;
+  }
 }
