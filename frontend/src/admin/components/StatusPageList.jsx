@@ -53,7 +53,14 @@ export default function StatusPageList({ pages, onOpen, onChanged, onLogout }) {
             <li key={p.slug} className="admin-list__item">
               <div>
                 <strong>{p.title}</strong>
-                <span className="admin-dim"> — /{p.slug} — {p.monitors.length} monitor</span>
+                <span className="admin-dim">
+                  {' — '}
+                  <a href={`/${p.slug}`} target="_blank" rel="noreferrer">
+                    /{p.slug}
+                  </a>
+                  {' — '}
+                  {p.monitors.length} monitor
+                </span>
               </div>
               <div className="admin-list__actions">
                 <button className="btn" onClick={() => onOpen(p.slug)}>

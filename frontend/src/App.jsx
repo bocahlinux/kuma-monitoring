@@ -15,23 +15,25 @@ function overallBanner(status) {
   return { icon: '?', text: 'Status belum diketahui', className: 'banner banner--unknown' };
 }
 
-export default function App() {
+export default function App({ slug }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
 
   const load = useCallback(async () => {
     try {
-      const statusPage = await fetchStatusPage();
+      const statusPage = await fetchStatusPage(slug);
       setData(statusPage);
       setError(null);
       setLastUpdated(new Date());
     } catch (err) {
       setError(err.message);
     }
-  }, []);
+  }, [slug]);
 
   useEffect(() => {
+    setData(null);
+    setError(null);
     load();
     const id = setInterval(load, POLL_INTERVAL_MS);
     return () => clearInterval(id);

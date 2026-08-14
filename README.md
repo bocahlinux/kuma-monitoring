@@ -49,7 +49,7 @@ Kalau suatu saat butuh akses backend langsung tanpa lewat frontend (misal debug)
 
 `frontend/` adalah React (Vite) dengan dua halaman:
 
-- **`/`** — status page publik, consume `GET /api/status-pages/:slug` (tanpa API key, di-proxy nginx ke backend) lewat polling berkala.
+- **`/<slug>`** — status page publik untuk status page itu (misal `/samsat`, `/vpn`), consume `GET /api/status-pages/:slug` (tanpa API key, di-proxy nginx ke backend) lewat polling berkala. `/` (tanpa slug) menampilkan status page default (`FRONTEND_STATUS_PAGE_SLUG`). Satu deployment melayani semua status page yang ada — bikin status page baru di `/admin` langsung bisa diakses lewat `/<slug>`-nya, tanpa rebuild.
 - **`/admin`** — kelola status page (buat/hapus, atur monitor, label, urutan) lewat UI, login pakai `API_KEY` yang sama dengan backend. Detail keamanannya ada di [frontend/README.md](frontend/README.md#keamanan-halaman-admin).
 
 Konfigurasi frontend (`FRONTEND_API_BASE_URL`, `FRONTEND_STATUS_PAGE_SLUG`, dst di `.env`) **di-bake ke file statis saat build**, bukan dibaca saat runtime — jadi tiap ganti nilainya wajib rebuild:
