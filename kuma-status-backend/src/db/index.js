@@ -30,6 +30,13 @@ export function initDb(dbPath) {
       sort_order INTEGER NOT NULL DEFAULT 0,
       UNIQUE (status_page_id, kuma_monitor_id)
     );
+
+    CREATE TABLE IF NOT EXISTS status_page_groups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      status_page_id INTEGER NOT NULL REFERENCES status_pages(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
   `);
 
   migrate(db);
@@ -41,9 +48,15 @@ export function initDb(dbPath) {
 // migrasi additive kecil kayak gini ditangani manual, dicek dulu biar aman dijalankan
 // ulang tiap kali server start.
 function migrate(db) {
-  const columns = db.prepare('PRAGMA table_info(status_pages)').all();
-  const hasShowOnHome = columns.some((c) => c.name === 'show_on_home');
-  if (!hasShowOnHome) {
+  const statusPageColumns = db.prepare('PRAGMA table_info(status_pages)').all();
+  if (!statusPageColumns.some((c) => c.name === 'show_on_home')) {
     db.exec('ALTER TABLE status_pages ADD COLUMN show_on_home INTEGER NOT NULL DEFAULT 1');
+  }
+
+  const monitorColumns = db.prepare('PRAGMA table_info(status_page_monitors)').all();
+  if (!monitorColumns.some((c) => c.name === 'group_id')) {
+    // Nggak pakai REFERENCES di sini -- SQLite kadang berulah soal FK yang ditambah lewat
+    // ALTER TABLE. Integritasnya dijaga di kode repo (deleteGroup null-in dulu sebelum hapus).
+    db.exec('ALTER TABLE status_page_monitors ADD COLUMN group_id INTEGER');
   }
 }

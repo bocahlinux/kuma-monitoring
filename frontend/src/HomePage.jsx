@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchHome } from './api';
-import MonitorRow from './components/MonitorRow';
+import GroupSection from './components/GroupSection';
 import './App.css';
 
 const POLL_INTERVAL_MS = Number(import.meta.env.VITE_POLL_INTERVAL_MS) || 20000;
@@ -73,20 +73,15 @@ export default function HomePage() {
 
       {pages.length === 0 && <p className="page__description">Belum ada status page yang ditampilkan di sini.</p>}
 
-      {pages.map((p) => {
-        const monitors = [...p.monitors].sort((a, b) => a.sortOrder - b.sortOrder);
-        return (
-          <section key={p.slug} className="category">
-            <h2 className="category__title">{p.title}</h2>
-            {p.description && <p className="category__description">{p.description}</p>}
-            <div className="monitor-list">
-              {monitors.map((m) => (
-                <MonitorRow key={m.kumaMonitorId} monitor={m} />
-              ))}
-            </div>
-          </section>
-        );
-      })}
+      {pages.map((p) => (
+        <section key={p.slug} className="category">
+          <h2 className="category__title">{p.title}</h2>
+          {p.description && <p className="category__description">{p.description}</p>}
+          {p.groups.map((g) => (
+            <GroupSection key={g.id ?? 'ungrouped'} group={g} />
+          ))}
+        </section>
+      ))}
 
       {error && <p className="error-text error-text--inline">Update terakhir gagal: {error}</p>}
 

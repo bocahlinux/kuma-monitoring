@@ -126,6 +126,23 @@
   margin: 0 0 12px;
 }
 
+.group {
+  margin-bottom: 20px;
+}
+
+.group:last-of-type {
+  margin-bottom: 0;
+}
+
+.group__title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0 0 8px;
+}
+
 .monitor-list {
   display: flex;
   flex-direction: column;

@@ -60,7 +60,10 @@ x-api-key: <API_KEY>
 | POST | `/api/status-pages` | API key | Buat status page baru — body: `{ slug, title, description, showOnHome? }` (default `showOnHome: true`) |
 | PUT | `/api/status-pages/:slug` | API key | Update title/description/showOnHome |
 | DELETE | `/api/status-pages/:slug` | API key | Hapus status page |
-| POST | `/api/status-pages/:slug/monitors` | API key | Tambah/update monitor di status page — body: `{ kumaMonitorId, customLabel, sortOrder }` |
+| POST | `/api/status-pages/:slug/groups` | API key | Buat grup baru di status page ini (fitur "Groups" ala Kuma) — body: `{ name, sortOrder? }` |
+| PUT | `/api/status-pages/:slug/groups/:groupId` | API key | Ubah nama/urutan grup — body: `{ name?, sortOrder? }` |
+| DELETE | `/api/status-pages/:slug/groups/:groupId` | API key | Hapus grup — monitor di dalamnya **tidak ikut terhapus**, cuma jadi tanpa grup |
+| POST | `/api/status-pages/:slug/monitors` | API key | Tambah/update monitor di status page — body: `{ kumaMonitorId, customLabel, sortOrder, groupId? }` (`groupId: null`/dikosongkan = tanpa grup) |
 | DELETE | `/api/status-pages/:slug/monitors/:kumaMonitorId` | API key | Keluarkan monitor dari status page |
 
 ## Bentuk data monitor
@@ -87,6 +90,27 @@ Setiap monitor (di `/api/monitors`, `/api/monitors/:id`, dan di dalam `monitors[
 ```
 
 `heartbeats` ini yang dipakai buat bikin bar chart ala status page bawaan Kuma (tiap elemen = satu kotak/bar, warnanya dari `status`). Cuma nyimpen 50 heartbeat terakhir per monitor di memory (bukan seluruh history) — kalau butuh history lebih panjang dari itu, ambil langsung dari Kuma, bukan dari backend ini.
+
+## Bentuk data status page (Groups)
+
+Response `statusPage` (dari `/api/home` → `statusPages[]`, atau `/api/status-pages/:slug`) punya `monitors` (flat, semua monitor apa adanya) **dan** `groups` (sudah dikelompokkan, ini yang dipakai buat render):
+
+```jsonc
+{
+  "slug": "samsat",
+  "title": "Status Layanan",
+  "showOnHome": true,
+  "overallStatus": "up",
+  "monitors": [ /* flat, tiap item punya groupId (null kalau tanpa grup) */ ],
+  "groups": [
+    { "id": null, "name": null, "monitors": [ /* belum di-assign ke grup manapun */ ] },
+    { "id": 1, "name": "VPN", "sortOrder": 0, "monitors": [ /* ... */ ] },
+    { "id": 2, "name": "SAMSAT", "sortOrder": 1, "monitors": [ /* ... */ ] }
+  ]
+}
+```
+
+Grup `id: null` (tanpa nama) selalu muncul pertama kalau ada monitor yang belum di-assign — frontend nge-render itu tanpa header sama sekali. Kelola grup lewat endpoint `/api/status-pages/:slug/groups*` di tabel di atas.
 
 ## WebSocket (`/ws`)
 

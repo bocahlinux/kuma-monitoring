@@ -1,12 +1,13 @@
 import { Router } from 'express';
 
-function composePage(page, pageMonitors, kumaClient) {
+function composePage(page, pageMonitors, pageGroups, kumaClient) {
   const monitors = pageMonitors.map((pm) => {
     const live = kumaClient.getMonitorById(pm.kuma_monitor_id);
     return {
       kumaMonitorId: pm.kuma_monitor_id,
       label: pm.custom_label || live?.name || `Monitor #${pm.kuma_monitor_id}`,
       sortOrder: pm.sort_order,
+      groupId: pm.group_id ?? null,
       live: live || { id: pm.kuma_monitor_id, status: null, statusLabel: 'unknown' },
     };
   });
@@ -17,6 +18,24 @@ function composePage(page, pageMonitors, kumaClient) {
       ? 'unknown'
       : 'up';
 
+  const sortedMonitors = [...monitors].sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const namedGroups = [...pageGroups]
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((g) => ({
+      id: g.id,
+      name: g.name,
+      sortOrder: g.sort_order,
+      monitors: sortedMonitors.filter((m) => m.groupId === g.id),
+    }));
+
+  const ungroupedMonitors = sortedMonitors.filter((m) => m.groupId == null);
+  // Grup semu buat monitor yang belum di-assign ke grup manapun -- selalu tampil
+  // duluan, tanpa header (name: null) kalau memang ada isinya.
+  const groups = ungroupedMonitors.length
+    ? [{ id: null, name: null, sortOrder: -1, monitors: ungroupedMonitors }, ...namedGroups]
+    : namedGroups;
+
   return {
     slug: page.slug,
     title: page.title,
@@ -25,7 +44,12 @@ function composePage(page, pageMonitors, kumaClient) {
     showOnHome: !!page.show_on_home,
     overallStatus,
     monitors,
+    groups,
   };
+}
+
+function composeFull(repo, page, kumaClient) {
+  return composePage(page, repo.getPageMonitors(page.id), repo.listGroups(page.id), kumaClient);
 }
 
 function combinedOverallStatus(pages) {
@@ -43,7 +67,7 @@ export function createPublicStatusPagesRouter(repo, kumaClient) {
 
   // GET /api/home - gabungan semua status page yang di-toggle tampil di halaman utama
   router.get('/home', (req, res) => {
-    const pages = repo.listVisiblePages().map((p) => composePage(p, repo.getPageMonitors(p.id), kumaClient));
+    const pages = repo.listVisiblePages().map((p) => composeFull(repo, p, kumaClient));
     res.json({ statusPages: pages, overallStatus: combinedOverallStatus(pages) });
   });
 
@@ -51,7 +75,7 @@ export function createPublicStatusPagesRouter(repo, kumaClient) {
   router.get('/status-pages/:slug', (req, res) => {
     const page = repo.getPageBySlug(req.params.slug);
     if (!page) return res.status(404).json({ error: 'Status page tidak ditemukan' });
-    res.json({ statusPage: composePage(page, repo.getPageMonitors(page.id), kumaClient) });
+    res.json({ statusPage: composeFull(repo, page, kumaClient) });
   });
 
   return router;
@@ -61,12 +85,30 @@ export function createPublicStatusPagesRouter(repo, kumaClient) {
 export function createStatusPagesRouter(repo, kumaClient) {
   const router = Router();
 
+  function requirePage(req, res) {
+    const page = repo.getPageBySlug(req.params.slug);
+    if (!page) {
+      res.status(404).json({ error: 'Status page tidak ditemukan' });
+      return null;
+    }
+    return page;
+  }
+
+  // Group harus benar-benar milik status page di URL -- jangan sampai slug A bisa
+  // ngedit/hapus grup milik slug B cuma dengan nebak groupId.
+  function requireOwnedGroup(page, groupId, res) {
+    const group = repo.getGroupById(groupId);
+    if (!group || group.status_page_id !== page.id) {
+      res.status(404).json({ error: 'Grup tidak ditemukan di status page ini' });
+      return null;
+    }
+    return group;
+  }
+
   // GET /api/status-pages - list semua custom status page (ringkas)
   router.get('/status-pages', (req, res) => {
     const pages = repo.listPages();
-    res.json({
-      statusPages: pages.map((p) => composePage(p, repo.getPageMonitors(p.id), kumaClient)),
-    });
+    res.json({ statusPages: pages.map((p) => composeFull(repo, p, kumaClient)) });
   });
 
   // POST /api/status-pages - buat status page baru
@@ -77,7 +119,7 @@ export function createStatusPagesRouter(repo, kumaClient) {
     }
     try {
       const page = repo.createPage({ slug, title, description, showOnHome });
-      res.status(201).json({ statusPage: composePage(page, repo.getPageMonitors(page.id), kumaClient) });
+      res.status(201).json({ statusPage: composeFull(repo, page, kumaClient) });
     } catch (err) {
       if (String(err.message).includes('UNIQUE')) {
         return res.status(409).json({ error: 'slug sudah dipakai' });
@@ -88,11 +130,11 @@ export function createStatusPagesRouter(repo, kumaClient) {
 
   // PUT /api/status-pages/:slug - update title/description/showOnHome
   router.put('/status-pages/:slug', (req, res) => {
-    const existing = repo.getPageBySlug(req.params.slug);
-    if (!existing) return res.status(404).json({ error: 'Status page tidak ditemukan' });
+    const existing = requirePage(req, res);
+    if (!existing) return;
     const { title, description, showOnHome } = req.body || {};
     const page = repo.updatePage(req.params.slug, { title, description, showOnHome });
-    res.json({ statusPage: composePage(page, repo.getPageMonitors(page.id), kumaClient) });
+    res.json({ statusPage: composeFull(repo, page, kumaClient) });
   });
 
   // DELETE /api/status-pages/:slug
@@ -102,27 +144,61 @@ export function createStatusPagesRouter(repo, kumaClient) {
     res.status(204).end();
   });
 
+  // POST /api/status-pages/:slug/groups - buat grup baru di status page ini
+  router.post('/status-pages/:slug/groups', (req, res) => {
+    const page = requirePage(req, res);
+    if (!page) return;
+    const { name, sortOrder } = req.body || {};
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'name wajib diisi' });
+    }
+    repo.createGroup(page.id, { name: name.trim(), sortOrder });
+    res.status(201).json({ statusPage: composeFull(repo, page, kumaClient) });
+  });
+
+  // PUT /api/status-pages/:slug/groups/:groupId - ubah nama/urutan grup
+  router.put('/status-pages/:slug/groups/:groupId', (req, res) => {
+    const page = requirePage(req, res);
+    if (!page) return;
+    const group = requireOwnedGroup(page, Number(req.params.groupId), res);
+    if (!group) return;
+    const { name, sortOrder } = req.body || {};
+    repo.updateGroup(group.id, { name, sortOrder });
+    res.json({ statusPage: composeFull(repo, page, kumaClient) });
+  });
+
+  // DELETE /api/status-pages/:slug/groups/:groupId - hapus grup (monitor di dalamnya jadi tanpa grup)
+  router.delete('/status-pages/:slug/groups/:groupId', (req, res) => {
+    const page = requirePage(req, res);
+    if (!page) return;
+    const group = requireOwnedGroup(page, Number(req.params.groupId), res);
+    if (!group) return;
+    repo.deleteGroup(group.id);
+    res.json({ statusPage: composeFull(repo, page, kumaClient) });
+  });
+
   // POST /api/status-pages/:slug/monitors - tambah/update monitor dalam status page
   router.post('/status-pages/:slug/monitors', (req, res) => {
-    const page = repo.getPageBySlug(req.params.slug);
-    if (!page) return res.status(404).json({ error: 'Status page tidak ditemukan' });
+    const page = requirePage(req, res);
+    if (!page) return;
 
-    const { kumaMonitorId, customLabel, sortOrder } = req.body || {};
+    const { kumaMonitorId, customLabel, sortOrder, groupId } = req.body || {};
     if (kumaMonitorId == null) {
       return res.status(400).json({ error: 'kumaMonitorId wajib diisi' });
     }
     if (!kumaClient.getMonitorById(kumaMonitorId)) {
       return res.status(400).json({ error: `Monitor id ${kumaMonitorId} tidak ditemukan di Kuma` });
     }
+    if (groupId != null && !requireOwnedGroup(page, groupId, res)) return;
 
-    const monitors = repo.addMonitor(page.id, { kumaMonitorId, customLabel, sortOrder });
-    res.status(201).json({ statusPage: composePage(page, monitors, kumaClient) });
+    repo.addMonitor(page.id, { kumaMonitorId, customLabel, sortOrder, groupId });
+    res.status(201).json({ statusPage: composeFull(repo, page, kumaClient) });
   });
 
   // DELETE /api/status-pages/:slug/monitors/:kumaMonitorId
   router.delete('/status-pages/:slug/monitors/:kumaMonitorId', (req, res) => {
-    const page = repo.getPageBySlug(req.params.slug);
-    if (!page) return res.status(404).json({ error: 'Status page tidak ditemukan' });
+    const page = requirePage(req, res);
+    if (!page) return;
 
     const removed = repo.removeMonitor(page.id, Number(req.params.kumaMonitorId));
     if (!removed) return res.status(404).json({ error: 'Monitor tidak ada di status page ini' });

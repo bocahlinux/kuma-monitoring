@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchStatusPage } from './api';
-import MonitorRow from './components/MonitorRow';
+import GroupSection from './components/GroupSection';
 import './App.css';
 
 const POLL_INTERVAL_MS = Number(import.meta.env.VITE_POLL_INTERVAL_MS) || 20000;
@@ -57,7 +57,6 @@ export default function App({ slug }) {
   }
 
   const banner = overallBanner(data.overallStatus);
-  const monitors = [...data.monitors].sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
     <div className="page">
@@ -73,9 +72,9 @@ export default function App({ slug }) {
         {banner.text}
       </div>
 
-      <main className="monitor-list">
-        {monitors.map((m) => (
-          <MonitorRow key={m.kumaMonitorId} monitor={m} />
+      <main>
+        {data.groups.map((g) => (
+          <GroupSection key={g.id ?? 'ungrouped'} group={g} />
         ))}
       </main>
 

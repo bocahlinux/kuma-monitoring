@@ -8,7 +8,10 @@ export default function StatusPageEditor({ slug, onBack }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [addMonitorId, setAddMonitorId] = useState('');
+  const [addGroupId, setAddGroupId] = useState('');
+  const [newGroupName, setNewGroupName] = useState('');
   const [labelDrafts, setLabelDrafts] = useState({});
+  const [groupNameDrafts, setGroupNameDrafts] = useState({});
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -19,6 +22,7 @@ export default function StatusPageEditor({ slug, onBack }) {
     setTitle(p.title);
     setDescription(p.description || '');
     setLabelDrafts(Object.fromEntries(p.monitors.map((m) => [m.kumaMonitorId, m.label])));
+    setGroupNameDrafts(Object.fromEntries(p.groups.filter((g) => g.id != null).map((g) => [g.id, g.name])));
   };
 
   useEffect(() => {
@@ -43,7 +47,10 @@ export default function StatusPageEditor({ slug, onBack }) {
 
   const usedIds = new Set(page.monitors.map((m) => m.kumaMonitorId));
   const available = allMonitors.filter((m) => !usedIds.has(m.id));
-  const sorted = [...page.monitors].sort((a, b) => a.sortOrder - b.sortOrder);
+  const namedGroups = page.groups.filter((g) => g.id != null);
+  const nextOrder = page.monitors.length
+    ? Math.max(...page.monitors.map((m) => m.sortOrder)) + 1
+    : 1;
 
   const saveDetails = () =>
     runAction(() => adminApi.updateStatusPage(slug, { title, description }));
@@ -51,14 +58,17 @@ export default function StatusPageEditor({ slug, onBack }) {
   const addMonitor = () => {
     if (!addMonitorId) return;
     const monitor = allMonitors.find((m) => m.id === Number(addMonitorId));
-    const nextOrder = sorted.length ? sorted[sorted.length - 1].sortOrder + 1 : 1;
     runAction(() =>
       adminApi.addMonitor(slug, {
         kumaMonitorId: Number(addMonitorId),
         customLabel: monitor?.name || '',
         sortOrder: nextOrder,
+        groupId: addGroupId ? Number(addGroupId) : null,
       })
-    ).then(() => setAddMonitorId(''));
+    ).then(() => {
+      setAddMonitorId('');
+      setAddGroupId('');
+    });
   };
 
   const removeMonitor = (kumaMonitorId) =>
@@ -70,24 +80,64 @@ export default function StatusPageEditor({ slug, onBack }) {
         kumaMonitorId: m.kumaMonitorId,
         customLabel: labelDrafts[m.kumaMonitorId] ?? m.label,
         sortOrder: m.sortOrder,
+        groupId: m.groupId,
       })
     );
 
-  const move = (index, direction) => {
-    const target = sorted[index + direction];
-    const current = sorted[index];
+  const setMonitorGroup = (m, newGroupId) =>
+    runAction(() =>
+      adminApi.addMonitor(slug, {
+        kumaMonitorId: m.kumaMonitorId,
+        customLabel: m.label,
+        sortOrder: m.sortOrder,
+        groupId: newGroupId,
+      })
+    );
+
+  // Reorder cuma antar monitor DALAM grup yang sama -- sort_order antar grup beda nggak
+  // saling ngaruh karena composePage nge-bucket per grup dulu baru diurut di dalamnya.
+  const moveMonitorInGroup = (groupMonitors, index, direction) => {
+    const current = groupMonitors[index];
+    const target = groupMonitors[index + direction];
     if (!target) return;
     runAction(async () => {
       await adminApi.addMonitor(slug, {
         kumaMonitorId: current.kumaMonitorId,
         customLabel: current.label,
         sortOrder: target.sortOrder,
+        groupId: current.groupId,
       });
       await adminApi.addMonitor(slug, {
         kumaMonitorId: target.kumaMonitorId,
         customLabel: target.label,
         sortOrder: current.sortOrder,
+        groupId: target.groupId,
       });
+    });
+  };
+
+  const addGroup = () => {
+    if (!newGroupName.trim()) return;
+    runAction(() => adminApi.createGroup(slug, { name: newGroupName.trim() })).then(() =>
+      setNewGroupName('')
+    );
+  };
+
+  const saveGroupName = (group) =>
+    runAction(() => adminApi.updateGroup(slug, group.id, { name: groupNameDrafts[group.id] ?? group.name }));
+
+  const removeGroup = (group) => {
+    if (!confirm(`Hapus grup "${group.name}"? Monitor di dalamnya tetap ada, cuma jadi tanpa grup.`)) return;
+    runAction(() => adminApi.deleteGroup(slug, group.id));
+  };
+
+  const moveGroup = (index, direction) => {
+    const target = namedGroups[index + direction];
+    const current = namedGroups[index];
+    if (!target) return;
+    runAction(async () => {
+      await adminApi.updateGroup(slug, current.id, { sortOrder: target.sortOrder });
+      await adminApi.updateGroup(slug, target.id, { sortOrder: current.sortOrder });
     });
   };
 
@@ -120,47 +170,112 @@ export default function StatusPageEditor({ slug, onBack }) {
       </section>
 
       <section className="admin-card">
-        <h2>Monitor ({sorted.length})</h2>
+        <h2>Grup</h2>
+        <p className="admin-dim">
+          Kelompokkan monitor di bawah header bernama, mirip fitur Groups di Kuma. Monitor yang belum
+          di-assign ke grup manapun tampil di atas tanpa header.
+        </p>
+        {namedGroups.length === 0 && <p className="admin-dim">Belum ada grup.</p>}
         <ul className="admin-list">
-          {sorted.map((m, i) => (
-            <li key={m.kumaMonitorId} className="admin-list__item admin-list__item--monitor">
-              <span className={`status-badge status-badge--${m.live.statusLabel || 'unknown'}`}>
-                <span aria-hidden="true">{STATUS_ICON[m.live.statusLabel] || STATUS_ICON.unknown}</span>
-                {STATUS_LABEL_ID[m.live.statusLabel] || STATUS_LABEL_ID.unknown}
-              </span>
+          {namedGroups.map((g, i) => (
+            <li key={g.id} className="admin-list__item">
               <input
                 className="admin-list__label-input"
-                value={labelDrafts[m.kumaMonitorId] ?? m.label}
-                onChange={(e) =>
-                  setLabelDrafts((d) => ({ ...d, [m.kumaMonitorId]: e.target.value }))
-                }
+                value={groupNameDrafts[g.id] ?? g.name}
+                onChange={(e) => setGroupNameDrafts((d) => ({ ...d, [g.id]: e.target.value }))}
               />
-              <span className="admin-dim">{m.live.hostname}</span>
               <div className="admin-list__actions">
-                <button className="btn" disabled={busy || i === 0} onClick={() => move(i, -1)}>
+                <button className="btn" disabled={busy || i === 0} onClick={() => moveGroup(i, -1)}>
                   ↑
                 </button>
                 <button
                   className="btn"
-                  disabled={busy || i === sorted.length - 1}
-                  onClick={() => move(i, 1)}
+                  disabled={busy || i === namedGroups.length - 1}
+                  onClick={() => moveGroup(i, 1)}
                 >
                   ↓
                 </button>
-                <button className="btn" disabled={busy} onClick={() => saveLabel(m)}>
-                  Simpan label
+                <button className="btn" disabled={busy} onClick={() => saveGroupName(g)}>
+                  Simpan nama
                 </button>
-                <button
-                  className="btn btn--danger"
-                  disabled={busy}
-                  onClick={() => removeMonitor(m.kumaMonitorId)}
-                >
-                  Hapus
+                <button className="btn btn--danger" disabled={busy} onClick={() => removeGroup(g)}>
+                  Hapus grup
                 </button>
               </div>
             </li>
           ))}
         </ul>
+        <div className="admin-form admin-form--inline">
+          <input
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            placeholder="Nama grup, misal VPN"
+          />
+          <button className="btn btn--primary" onClick={addGroup} disabled={busy || !newGroupName.trim()}>
+            Tambah grup
+          </button>
+        </div>
+      </section>
+
+      <section className="admin-card">
+        <h2>Monitor ({page.monitors.length})</h2>
+
+        {page.groups.map((g) => (
+          <div key={g.id ?? 'ungrouped'} className="admin-group">
+            {g.name && <h3 className="admin-group__title">{g.name}</h3>}
+            <ul className="admin-list">
+              {g.monitors.map((m, i) => (
+                <li key={m.kumaMonitorId} className="admin-list__item admin-list__item--monitor">
+                  <span className={`status-badge status-badge--${m.live.statusLabel || 'unknown'}`}>
+                    <span aria-hidden="true">{STATUS_ICON[m.live.statusLabel] || STATUS_ICON.unknown}</span>
+                    {STATUS_LABEL_ID[m.live.statusLabel] || STATUS_LABEL_ID.unknown}
+                  </span>
+                  <input
+                    className="admin-list__label-input"
+                    value={labelDrafts[m.kumaMonitorId] ?? m.label}
+                    onChange={(e) =>
+                      setLabelDrafts((d) => ({ ...d, [m.kumaMonitorId]: e.target.value }))
+                    }
+                  />
+                  <select
+                    value={m.groupId ?? ''}
+                    onChange={(e) => setMonitorGroup(m, e.target.value ? Number(e.target.value) : null)}
+                    disabled={busy}
+                  >
+                    <option value="">Tanpa grup</option>
+                    {namedGroups.map((ng) => (
+                      <option key={ng.id} value={ng.id}>
+                        {ng.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="admin-list__actions">
+                    <button className="btn" disabled={busy || i === 0} onClick={() => moveMonitorInGroup(g.monitors, i, -1)}>
+                      ↑
+                    </button>
+                    <button
+                      className="btn"
+                      disabled={busy || i === g.monitors.length - 1}
+                      onClick={() => moveMonitorInGroup(g.monitors, i, 1)}
+                    >
+                      ↓
+                    </button>
+                    <button className="btn" disabled={busy} onClick={() => saveLabel(m)}>
+                      Simpan label
+                    </button>
+                    <button
+                      className="btn btn--danger"
+                      disabled={busy}
+                      onClick={() => removeMonitor(m.kumaMonitorId)}
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
 
         <div className="admin-form admin-form--inline">
           <select value={addMonitorId} onChange={(e) => setAddMonitorId(e.target.value)}>
@@ -168,6 +283,14 @@ export default function StatusPageEditor({ slug, onBack }) {
             {available.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name} ({m.hostname})
+              </option>
+            ))}
+          </select>
+          <select value={addGroupId} onChange={(e) => setAddGroupId(e.target.value)}>
+            <option value="">Tanpa grup</option>
+            {namedGroups.map((ng) => (
+              <option key={ng.id} value={ng.id}>
+                {ng.name}
               </option>
             ))}
           </select>

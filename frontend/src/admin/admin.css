@@ -60,6 +60,19 @@
   color: var(--accent);
 }
 
+.admin-group {
+  margin-bottom: 16px;
+}
+
+.admin-group__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin: 0 0 8px;
+}
+
 .admin-list {
   list-style: none;
   margin: 0 0 12px;

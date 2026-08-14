@@ -47,10 +47,7 @@ Kalau suatu saat butuh akses backend langsung tanpa lewat frontend (misal debug)
 
 ## Frontend (status page publik + admin)
 
-`frontend/` adalah React (Vite) dengan dua halaman:
-
-- **`/`** — halaman gabungan: tiap status page yang ditandai "tampil di halaman utama" (toggle di `/admin`) muncul sebagai satu kategori/section, mirip tampilan Groups di status page bawaan Kuma. Consume `GET /api/home`.
-- **`/<slug>`** — status page publik untuk satu status page itu saja (misal `/samsat`, `/vpn`), dipakai kalau mau share link satu kategori tanpa yang lain. Consume `GET /api/status-pages/:slug`. Status page tetap bisa diakses di sini walau toggle "tampil di halaman utama"-nya nonaktif.
+`frontend/` adalah React (Vite) dengan tiga halaman (`/`, `/<slug>`, `/admin`) — detail lengkap termasuk fitur **Groups** (pengelompokan monitor di dalam satu status page, mirip Kuma) ada di [frontend/README.md](frontend/README.md).
 
 Satu deployment melayani semua status page yang ada — bikin status page baru di `/admin` langsung bisa diakses lewat `/<slug>`-nya (dan otomatis ikut di `/` kalau toggle-nya nyala), tanpa rebuild.
 - **`/admin`** — kelola status page (buat/hapus, atur monitor, label, urutan) lewat UI, login pakai `API_KEY` yang sama dengan backend. Detail keamanannya ada di [frontend/README.md](frontend/README.md#keamanan-halaman-admin).

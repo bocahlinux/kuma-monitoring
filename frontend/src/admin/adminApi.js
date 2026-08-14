@@ -59,4 +59,10 @@ export const adminApi = {
     request(`/status-pages/${slug}/monitors`, { method: 'POST', body: payload }).then((d) => d.statusPage),
   removeMonitor: (slug, kumaMonitorId) =>
     request(`/status-pages/${slug}/monitors/${kumaMonitorId}`, { method: 'DELETE' }),
+  createGroup: (slug, payload) =>
+    request(`/status-pages/${slug}/groups`, { method: 'POST', body: payload }).then((d) => d.statusPage),
+  updateGroup: (slug, groupId, payload) =>
+    request(`/status-pages/${slug}/groups/${groupId}`, { method: 'PUT', body: payload }).then((d) => d.statusPage),
+  deleteGroup: (slug, groupId) =>
+    request(`/status-pages/${slug}/groups/${groupId}`, { method: 'DELETE' }).then((d) => d.statusPage),
 };
