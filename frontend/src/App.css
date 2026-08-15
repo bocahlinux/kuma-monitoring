@@ -746,3 +746,40 @@
     min-width: 24px;
   }
 }
+
+/* Mode "TV/NOC" -- ditonton dari jarak beberapa meter (dinding kantor, layar 32"+),
+   bukan dari meja. Dua masalah beda dari layar lebar biasa: (1) kontainer 720px yang
+   pas buat dibaca dari dekat jadi kecil & banyak ruang kosong di kiri-kanan kalau
+   dipepetin ke layar 1920px+, (2) semua ukuran (teks, padding, gap) perlu ikut
+   membesar proporsional, bukan cuma teksnya -- makanya pakai `zoom`, bukan cuma naikin
+   font-size, biar spacing & border ikut skala dan nggak jadi kepadetan/dempet. */
+@media (min-width: 1600px) {
+  .page {
+    max-width: 1600px;
+    padding: 56px 56px 80px;
+    zoom: 1.25;
+  }
+
+  /* Grup disusun berdampingan (bukan ditumpuk terus ke bawah) biar makin banyak yang
+     muat dalam satu layar tanpa scroll -- penting buat TV yang nggak ada mouse/remote
+     buat scroll. auto-fit otomatis nyesuain jumlah kolom ke berapa pun jumlah grupnya. */
+  .page__groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+    align-items: start;
+    column-gap: 28px;
+  }
+
+  /* Grup yang punya diagram host butuh lebar penuh (bukan kepotong satu kolom grid)
+     biar anak-anaknya nggak perlu scroll horizontal -- lihat HostDiagram.jsx. */
+  .page__groups .group:has(.group__dual) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 2400px) {
+  .page {
+    max-width: 2000px;
+    zoom: 1.5;
+  }
+}

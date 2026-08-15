@@ -87,9 +87,11 @@ export default function HomePage() {
         <section key={p.slug} className="category">
           <h2 className="category__title">{p.title}</h2>
           {p.description && <p className="category__description">{p.description}</p>}
-          {p.groups.map((g) => (
-            <GroupSection key={g.id ?? 'ungrouped'} group={g} />
-          ))}
+          <div className="page__groups">
+            {p.groups.map((g) => (
+              <GroupSection key={g.id ?? 'ungrouped'} group={g} />
+            ))}
+          </div>
         </section>
       ))}
 

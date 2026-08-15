@@ -65,6 +65,10 @@ npm run build   # -> dist/
 
 `Dockerfile` di sini multi-stage: build dengan Node, lalu di-serve pakai nginx (`nginx.conf`, SPA fallback ke `index.html`, plus reverse-proxy `/api/` ke backend). Deploy production diatur lewat `docker-compose.yml` di root repo — lihat [README di root](../README.md#frontend-status-page-publik).
 
+## Mode TV/NOC (layar ≥1600px)
+
+Dipakai buat monitor 32"+ yang dipasang di dinding/kantor, dilihat dari jarak beberapa meter, bukan dari meja. `App.css` punya breakpoint `@media (min-width: 1600px)` yang: (1) melebarkan `.page` dan pakai CSS `zoom` (bukan cuma naikin `font-size`) biar teks, padding, dan gap ikut membesar proporsional sekaligus — kalau cuma teksnya yang dibesarkan, spacing-nya jadi keliatan dempet; (2) grup (`.page__groups`, wrapper baru di `App.jsx`/`HomePage.jsx`) disusun jadi beberapa kolom lewat CSS grid `auto-fit`, bukan ditumpuk vertikal terus — biar lebih banyak muat dalam satu layar tanpa perlu scroll (TV nggak ada mouse/remote buat itu); grup yang punya `HostDiagram` sengaja dikecualikan dari pembagian kolom (`grid-column: 1 / -1`, pakai selector `:has()`) biar dapat lebar penuh, ngurangin kemungkinan diagramnya perlu scroll horizontal. Ada tingkat kedua di `≥2400px` (zoom lebih besar lagi) buat panel 4K.
+
 ## Keamanan halaman `/admin`
 
 `/admin` **tidak dilindungi login system beneran** — cuma modal "masukkan API key" yang disimpan di `sessionStorage` browser lalu dikirim sebagai header `x-api-key` ke tiap request. Proteksi sebenarnya ada di backend (Express middleware `apiKeyAuth`): tanpa key yang cocok, semua endpoint admin balas `401`. Siapa pun yang tahu URL `/admin` bisa membuka halamannya, tapi tidak bisa melakukan apa-apa tanpa API key yang benar. Ini cukup buat kebutuhan satu admin/tim kecil — kalau nanti butuh multi-user dengan hak akses berbeda, ini perlu diganti sistem auth yang lebih proper (bukan sekadar shared API key).

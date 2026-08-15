@@ -73,7 +73,7 @@ export default function App({ slug }) {
 
       <PerformanceChart monitors={data.monitors} />
 
-      <main>
+      <main className="page__groups">
         {data.groups.map((g) => (
           <GroupSection key={g.id ?? 'ungrouped'} group={g} />
         ))}
