@@ -62,6 +62,11 @@ export default function HomePage() {
     .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
     .slice(0, MAX_INCIDENTS);
   const activeIncidents = allIncidents.filter((i) => !i.endedAt);
+  const lastIncident =
+    pages
+      .map((p) => p.lastIncident)
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))[0] || null;
 
   return (
     <div className="page">
@@ -70,7 +75,7 @@ export default function HomePage() {
         <ThemeToggle />
       </header>
 
-      <ActiveIncidentBanner incidents={activeIncidents} />
+      <ActiveIncidentBanner incidents={activeIncidents} lastIncident={lastIncident} />
 
       <StatRow monitors={allMonitors} />
 

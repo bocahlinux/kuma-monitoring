@@ -67,7 +67,7 @@ export default function App({ slug }) {
         <ThemeToggle />
       </header>
 
-      <ActiveIncidentBanner incidents={activeIncidents} />
+      <ActiveIncidentBanner incidents={activeIncidents} lastIncident={data.lastIncident} />
 
       <StatRow monitors={data.monitors} />
 

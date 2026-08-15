@@ -1,4 +1,4 @@
-const UPTIME_PERIOD_KEY = import.meta.env.VITE_UPTIME_PERIOD_KEY || '24';
+export const UPTIME_PERIOD_KEY = import.meta.env.VITE_UPTIME_PERIOD_KEY || '24';
 
 export function getUptimeFraction(uptime) {
   if (!uptime) return null;

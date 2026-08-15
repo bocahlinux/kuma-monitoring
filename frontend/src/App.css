@@ -82,21 +82,36 @@
   }
 }
 
-/* Kotak menonjol kalau ada insiden yang MASIH berlangsung -- sengaja beda gaya dari
-   kartu lain (border solid + latar tinted merah) biar langsung kena mata, ditempatkan
-   paling atas sebelum stat-row. */
+/* Kotak menonjol di atas stat-row -- dua varian: insiden aktif (border solid + latar
+   tinted merah, langsung kena mata) atau, kalau nggak ada, tetap tampil versi POSITIF
+   (tinted hijau) + kapan terakhir kali down, biar halaman nggak diam aja pas normal. */
 .active-incident {
-  border: 1px solid color-mix(in srgb, var(--status-critical) 40%, var(--border));
-  background: color-mix(in srgb, var(--status-critical) 8%, var(--surface));
   border-radius: 14px;
   padding: 14px 18px;
   margin-bottom: 20px;
   box-shadow: var(--shadow-sm);
 }
 
+.active-incident--down {
+  border: 1px solid color-mix(in srgb, var(--status-critical) 40%, var(--border));
+  background: color-mix(in srgb, var(--status-critical) 8%, var(--surface));
+}
+
+.active-incident--down .active-incident__title {
+  color: var(--status-critical);
+}
+
+.active-incident--ok {
+  border: 1px solid color-mix(in srgb, var(--status-good) 35%, var(--border));
+  background: color-mix(in srgb, var(--status-good) 7%, var(--surface));
+}
+
+.active-incident--ok .active-incident__title {
+  color: var(--status-good);
+}
+
 .active-incident__title {
   font-weight: 700;
-  color: var(--status-critical);
   margin-bottom: 6px;
 }
 
@@ -113,6 +128,11 @@
 .active-incident__meta {
   color: var(--text-secondary);
   margin-left: 6px;
+}
+
+.active-incident__meta--standalone {
+  margin: 0;
+  font-size: 0.85rem;
 }
 
 /* Kartu ringkasan -- satu card, dibagi garis tipis 1px lewat grid gap (bukan tiga/empat
@@ -225,10 +245,51 @@
   font-variant-numeric: tabular-nums;
 }
 
+.perf-chart__plot {
+  position: relative;
+}
+
 .perf-chart__svg {
   display: block;
   width: 100%;
   height: 40px;
+  cursor: crosshair;
+  overflow: visible;
+}
+
+/* Posisi dari style inline (left/top persen, ngikut titik data yang di-hover) --
+   translate di sini yang nempelin tooltip ke titiknya, arahnya beda kiri/kanan biar
+   nggak kepotong tepi chart (lihat tooltipSide di PerformanceChart.jsx). */
+.perf-chart__tooltip {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: var(--text-primary);
+  color: var(--page-bg);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--shadow-md);
+}
+
+.perf-chart__tooltip--left {
+  transform: translateY(-100%) translateY(-8px);
+}
+
+.perf-chart__tooltip--right {
+  transform: translate(-100%, -100%) translateY(-8px);
+}
+
+.perf-chart__tooltip strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.perf-chart__tooltip span {
+  color: color-mix(in srgb, var(--page-bg) 70%, transparent);
 }
 
 .category {
@@ -259,13 +320,29 @@
   margin-bottom: 0;
 }
 
+.group__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+
 .group__title {
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  margin: 0 0 8px;
+  margin: 0;
+}
+
+.group__uptime {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* Dua tampilan hidup bareng di DOM, cuma satu yang kelihatan lewat CSS -- di bawah
@@ -569,9 +646,13 @@
 
 .incident-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   padding: 10px 16px;
+}
+
+.incident-row .status-dot {
+  margin-top: 5px;
 }
 
 .incident-row + .incident-row {
@@ -593,6 +674,18 @@
 .incident-row__meta {
   font-size: 0.76rem;
   color: var(--text-secondary);
+}
+
+/* Keterangan manual dari admin (root cause dll) -- dibedakan dari .incident-row__meta
+   (waktu/durasi otomatis) lewat border kiri tipis, biar kebaca sebagai "catatan orang",
+   bukan data mentah sistem. */
+.incident-row__note {
+  margin-top: 2px;
+  padding-left: 8px;
+  border-left: 2px solid var(--border-strong);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-style: italic;
 }
 
 .error-text {

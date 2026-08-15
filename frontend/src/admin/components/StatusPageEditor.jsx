@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminApi } from '../adminApi';
 import { STATUS_ICON, STATUS_LABEL_ID } from '../../statusMeta';
+import { formatIncidentTiming } from '../../incidentFormat';
 
 const SLUG_RE = /^[a-z0-9-]+$/;
 
@@ -16,6 +17,7 @@ export default function StatusPageEditor({ slug, onBack, onSlugChanged }) {
   const [newGroupName, setNewGroupName] = useState('');
   const [labelDrafts, setLabelDrafts] = useState({});
   const [groupNameDrafts, setGroupNameDrafts] = useState({});
+  const [noteDrafts, setNoteDrafts] = useState({});
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -28,6 +30,7 @@ export default function StatusPageEditor({ slug, onBack, onSlugChanged }) {
     setSlugDraft(p.slug);
     setLabelDrafts(Object.fromEntries(p.monitors.map((m) => [m.kumaMonitorId, m.label])));
     setGroupNameDrafts(Object.fromEntries(p.groups.filter((g) => g.id != null).map((g) => [g.id, g.name])));
+    setNoteDrafts(Object.fromEntries(p.incidents.map((inc) => [inc.id, inc.note || ''])));
   };
 
   useEffect(() => {
@@ -168,6 +171,9 @@ export default function StatusPageEditor({ slug, onBack, onSlugChanged }) {
     if (!confirm(`Hapus grup "${group.name}"? Monitor di dalamnya tetap ada, cuma jadi tanpa grup.`)) return;
     runAction(() => adminApi.deleteGroup(slug, group.id));
   };
+
+  const saveIncidentNote = (incident) =>
+    runAction(() => adminApi.updateIncidentNote(slug, incident.id, noteDrafts[incident.id] ?? ''));
 
   const moveGroup = (index, direction) => {
     const target = namedGroups[index + direction];
@@ -358,6 +364,38 @@ export default function StatusPageEditor({ slug, onBack, onSlugChanged }) {
             Tambah
           </button>
         </div>
+      </section>
+
+      <section className="admin-card">
+        <h2>Insiden ({page.incidents.length})</h2>
+        <p className="admin-dim">
+          Waktu mulai/selesai insiden kedeteksi otomatis dari status monitor, nggak bisa diedit di sini.
+          Yang bisa diisi cuma catatan (root cause dll), opsional, tampil di halaman publik.
+        </p>
+        {page.incidents.length === 0 && <p className="admin-dim">Belum pernah ada insiden.</p>}
+        <ul className="admin-list">
+          {page.incidents.map((inc) => (
+            <li key={inc.id} className="admin-list__item admin-list__item--incident">
+              <div className="admin-incident__head">
+                <span className={`status-badge status-badge--${inc.endedAt ? 'up' : 'down'}`}>
+                  {inc.endedAt ? 'Selesai' : 'Berlangsung'}
+                </span>
+                <span className="admin-incident__title">{inc.monitorLabel}</span>
+                <span className="admin-dim">{formatIncidentTiming(inc)}</span>
+              </div>
+              <textarea
+                className="admin-textarea"
+                rows={2}
+                placeholder="Catatan/root cause (opsional, tampil di halaman publik)"
+                value={noteDrafts[inc.id] ?? ''}
+                onChange={(e) => setNoteDrafts((d) => ({ ...d, [inc.id]: e.target.value }))}
+              />
+              <button className="btn" disabled={busy} onClick={() => saveIncidentNote(inc)}>
+                Simpan catatan
+              </button>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );

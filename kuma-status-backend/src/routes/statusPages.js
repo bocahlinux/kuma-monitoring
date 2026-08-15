@@ -2,7 +2,20 @@ import { Router } from 'express';
 
 const MAX_INCIDENTS = 15;
 
-function composePage(page, pageMonitors, pageGroups, incidentRows, kumaClient) {
+function mapIncident(row, labelByMonitorId) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    kumaMonitorId: row.kuma_monitor_id,
+    monitorLabel: labelByMonitorId.get(row.kuma_monitor_id) || `Monitor #${row.kuma_monitor_id}`,
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+    message: row.message,
+    note: row.note,
+  };
+}
+
+function composePage(page, pageMonitors, pageGroups, incidentRows, lastIncidentRow, kumaClient) {
   const monitors = pageMonitors.map((pm) => {
     const live = kumaClient.getMonitorById(pm.kuma_monitor_id);
     return {
@@ -45,14 +58,7 @@ function composePage(page, pageMonitors, pageGroups, incidentRows, kumaClient) {
     : namedGroups;
 
   const labelByMonitorId = new Map(monitors.map((m) => [m.kumaMonitorId, m.label]));
-  const incidents = incidentRows.map((row) => ({
-    id: row.id,
-    kumaMonitorId: row.kuma_monitor_id,
-    monitorLabel: labelByMonitorId.get(row.kuma_monitor_id) || `Monitor #${row.kuma_monitor_id}`,
-    startedAt: row.started_at,
-    endedAt: row.ended_at,
-    message: row.message,
-  }));
+  const incidents = incidentRows.map((row) => mapIncident(row, labelByMonitorId));
 
   return {
     slug: page.slug,
@@ -64,17 +70,20 @@ function composePage(page, pageMonitors, pageGroups, incidentRows, kumaClient) {
     monitors,
     groups,
     incidents,
+    // Insiden terakhir yang PERNAH tercatat (aktif atau sudah selesai), dipisah dari
+    // `incidents` (yang cuma 15 terbaru) biar selalu ada walau daftar itu kepotong --
+    // dipakai halaman publik buat banner "insiden terakhir X hari lalu".
+    lastIncident: mapIncident(lastIncidentRow, labelByMonitorId),
   };
 }
 
 function composeFull(repo, incidentsRepo, page, kumaClient) {
   const monitors = repo.getPageMonitors(page.id);
   const groups = repo.listGroups(page.id);
-  const incidentRows = incidentsRepo.listRecentForMonitors(
-    monitors.map((m) => m.kuma_monitor_id),
-    MAX_INCIDENTS
-  );
-  return composePage(page, monitors, groups, incidentRows, kumaClient);
+  const monitorIds = monitors.map((m) => m.kuma_monitor_id);
+  const incidentRows = incidentsRepo.listRecentForMonitors(monitorIds, MAX_INCIDENTS);
+  const lastIncidentRow = incidentsRepo.getLastForMonitors(monitorIds);
+  return composePage(page, monitors, groups, incidentRows, lastIncidentRow, kumaClient);
 }
 
 function combinedOverallStatus(pages) {
@@ -243,6 +252,25 @@ export function createStatusPagesRouter(repo, incidentsRepo, kumaClient) {
     const removed = repo.removeMonitor(page.id, Number(req.params.kumaMonitorId));
     if (!removed) return res.status(404).json({ error: 'Monitor tidak ada di status page ini' });
     res.status(204).end();
+  });
+
+  // PUT /api/status-pages/:slug/incidents/:incidentId - isi/ubah catatan admin (root cause dll)
+  router.put('/status-pages/:slug/incidents/:incidentId', (req, res) => {
+    const page = requirePage(req, res);
+    if (!page) return;
+
+    const incident = incidentsRepo.getById(Number(req.params.incidentId));
+    if (!incident) return res.status(404).json({ error: 'Insiden tidak ditemukan' });
+
+    // Insiden nggak punya status_page_id sendiri -- kepemilikannya dicek lewat monitor-nya
+    // memang ter-assign ke status page di URL, biar slug A nggak bisa ngedit insiden slug B.
+    const pageMonitorIds = new Set(repo.getPageMonitors(page.id).map((m) => m.kuma_monitor_id));
+    if (!pageMonitorIds.has(incident.kuma_monitor_id)) {
+      return res.status(404).json({ error: 'Insiden tidak ditemukan di status page ini' });
+    }
+
+    incidentsRepo.updateNote(incident.id, req.body?.note);
+    res.json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
   });
 
   return router;

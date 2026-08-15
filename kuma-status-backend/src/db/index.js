@@ -72,4 +72,11 @@ function migrate(db) {
   if (!monitorColumns.some((c) => c.name === 'is_primary')) {
     db.exec('ALTER TABLE status_page_monitors ADD COLUMN is_primary INTEGER NOT NULL DEFAULT 0');
   }
+
+  const incidentColumns = db.prepare('PRAGMA table_info(incidents)').all();
+  if (!incidentColumns.some((c) => c.name === 'note')) {
+    // Beda dari `message` (otomatis dari Kuma, mis. "Timeout") -- ini keterangan
+    // manual yang diisi admin lewat /admin, misal root cause singkat.
+    db.exec('ALTER TABLE incidents ADD COLUMN note TEXT');
+  }
 }

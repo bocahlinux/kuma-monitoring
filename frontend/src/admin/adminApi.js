@@ -67,4 +67,8 @@ export const adminApi = {
     request(`/status-pages/${slug}/groups/${groupId}`, { method: 'DELETE' }).then((d) => d.statusPage),
   togglePrimary: (slug, kumaMonitorId) =>
     request(`/status-pages/${slug}/monitors/${kumaMonitorId}/primary`, { method: 'PUT' }).then((d) => d.statusPage),
+  updateIncidentNote: (slug, incidentId, note) =>
+    request(`/status-pages/${slug}/incidents/${incidentId}`, { method: 'PUT', body: { note } }).then(
+      (d) => d.statusPage
+    ),
 };

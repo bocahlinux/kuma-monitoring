@@ -109,6 +109,24 @@
   justify-content: flex-start;
 }
 
+.admin-list__item--incident {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.admin-incident__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-incident__title {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .admin-list__label-input {
   flex: 1;
   min-width: 120px;
@@ -156,7 +174,8 @@
 }
 
 input,
-select {
+select,
+textarea {
   background: var(--page-bg);
   border: 1px solid var(--border);
   color: var(--text-primary);
@@ -164,6 +183,11 @@ select {
   padding: 8px 10px;
   font-size: 0.9rem;
   font-family: inherit;
+}
+
+.admin-textarea {
+  width: 100%;
+  resize: vertical;
 }
 
 .btn {

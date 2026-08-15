@@ -1,5 +1,7 @@
 import MonitorRow from './MonitorRow';
 import HostDiagram from './HostDiagram';
+import { computeUptimeSummary } from '../stats';
+import { UPTIME_PERIOD_KEY } from '../monitorFormat';
 
 // Diagram cuma ditawarkan kalau jumlah anaknya wajar -- kebanyakan kotak bikin
 // diagramnya sesak/nggak kebaca, mendingan tetap list buat kasus itu. Garis
@@ -19,6 +21,10 @@ export default function GroupSection({ group }) {
   const primary = group.monitors.find((m) => m.isPrimary);
   const rest = primary ? group.monitors.filter((m) => m.kumaMonitorId !== primary.kumaMonitorId) : [];
   const canDiagram = !!primary && rest.length > 0 && rest.length <= MAX_DIAGRAM_CHILDREN;
+  // Rata-rata uptime gabungan semua anggota grup (host + anak-anaknya), periode sama
+  // kayak badge per-monitor -- biar kesehatan satu kelompok kelihatan sekali lihat
+  // tanpa harus itung manual dari tiap baris.
+  const groupUptime = group.monitors.length > 1 ? computeUptimeSummary(group.monitors, UPTIME_PERIOD_KEY) : null;
 
   const listView = (
     <div className="monitor-list">
@@ -41,7 +47,12 @@ export default function GroupSection({ group }) {
 
   return (
     <div className="group">
-      {group.name && <h3 className="group__title">{group.name}</h3>}
+      {group.name && (
+        <div className="group__header">
+          <h3 className="group__title">{group.name}</h3>
+          {groupUptime != null && <span className="group__uptime">{groupUptime}% uptime</span>}
+        </div>
+      )}
       {canDiagram ? (
         <div className="group__dual">
           <div className="group__list-view">{listView}</div>

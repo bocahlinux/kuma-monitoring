@@ -39,5 +39,33 @@ export function createIncidentsRepo(db) {
         )
         .all(...monitorIds, limit);
     },
+
+    // Insiden terakhir yang PERNAH tercatat buat sekumpulan monitor (aktif atau sudah
+    // selesai) -- dipakai buat nampilin "insiden terakhir X hari lalu" pas nggak ada
+    // insiden aktif, biar halaman publik tetap kasih konteks riwayat.
+    getLastForMonitors(monitorIds) {
+      if (!monitorIds.length) return null;
+      const placeholders = monitorIds.map(() => '?').join(',');
+      return (
+        db
+          .prepare(
+            `SELECT * FROM incidents
+             WHERE kuma_monitor_id IN (${placeholders})
+             ORDER BY started_at DESC
+             LIMIT 1`
+          )
+          .get(...monitorIds) || null
+      );
+    },
+
+    getById(id) {
+      return db.prepare('SELECT * FROM incidents WHERE id = ?').get(id) || null;
+    },
+
+    // Catatan manual dari admin (root cause dll), beda dari `message` otomatis Kuma.
+    updateNote(id, note) {
+      const result = db.prepare('UPDATE incidents SET note = ? WHERE id = ?').run(note || null, id);
+      return result.changes > 0;
+    },
   };
 }

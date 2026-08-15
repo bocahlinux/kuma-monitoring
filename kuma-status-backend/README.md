@@ -66,6 +66,7 @@ x-api-key: <API_KEY>
 | POST | `/api/status-pages/:slug/monitors` | API key | Tambah/update monitor di status page — body: `{ kumaMonitorId, customLabel, sortOrder, groupId? }` (`groupId: null`/dikosongkan = tanpa grup) |
 | PUT | `/api/status-pages/:slug/monitors/:kumaMonitorId/primary` | API key | Toggle jadi/bukan "host" grupnya — lihat "Host per grup" di bawah |
 | DELETE | `/api/status-pages/:slug/monitors/:kumaMonitorId` | API key | Keluarkan monitor dari status page |
+| PUT | `/api/status-pages/:slug/incidents/:incidentId` | API key | Isi/ubah catatan admin (root cause dll) — body: `{ note }`. Insiden harus dari monitor yang ter-assign di status page ini, kalau tidak 404 |
 
 ## Host per grup (dinamis)
 
@@ -113,16 +114,19 @@ Response `statusPage` (dari `/api/home` → `statusPages[]`, atau `/api/status-p
     { "id": 2, "name": "SAMSAT", "sortOrder": 1, "monitors": [ /* ... */ ] }
   ],
   "incidents": [
-    { "id": 1, "kumaMonitorId": 4, "monitorLabel": "01-palangka-raya", "startedAt": "2026-08-14T10:00:00.000Z", "endedAt": "2026-08-14T10:05:00.000Z", "message": "Connection timeout" }
-  ]
+    { "id": 1, "kumaMonitorId": 4, "monitorLabel": "01-palangka-raya", "startedAt": "2026-08-14T10:00:00.000Z", "endedAt": "2026-08-14T10:05:00.000Z", "message": "Connection timeout", "note": "Kabel fiber putus, sudah diperbaiki teknisi." },
+  ],
+  "lastIncident": { /* insiden paling baru yang PERNAH tercatat (aktif atau selesai), bentuknya sama kayak isi `incidents`, atau null kalau belum pernah ada insiden sama sekali. Dipisah dari `incidents` (yang cuma 15 terbaru) biar selalu ada walau daftar itu kepotong -- dipakai buat banner "insiden terakhir X hari lalu" pas nggak ada yang aktif */ }
 }
 ```
 
+`message` diisi otomatis dari Kuma (pesan error mentah, mis. "Timeout") pas insiden kedeteksi. `note` beda -- kosong (`null`) sampai admin isi manual lewat `/admin` (endpoint di atas), buat keterangan/root cause yang lebih manusiawi ketimbang pesan error teknis.
+
 Grup `id: null` (tanpa nama) selalu muncul pertama kalau ada monitor yang belum di-assign — frontend nge-render itu tanpa header sama sekali. Kelola grup lewat endpoint `/api/status-pages/:slug/groups*` di tabel di atas.
 
-## Riwayat insiden (otomatis, bukan manual)
+## Riwayat insiden (deteksi otomatis, catatan manual opsional)
 
-Backend sendiri yang mendeteksi transisi up↔down dari live heartbeat Kuma (lihat `src/kuma/incidentTracker.js`) dan mencatatnya ke tabel `incidents` di SQLite — **bukan** sesuatu yang di-input manual lewat `/admin`. Tiap `statusPage` response otomatis membawa maks 15 insiden terbaru (`incidents`, sudah urut terbaru dulu) dari monitor-monitor yang ada di page itu; `endedAt: null` artinya insiden masih berlangsung.
+Backend sendiri yang mendeteksi transisi up↔down dari live heartbeat Kuma (lihat `src/kuma/incidentTracker.js`) dan mencatatnya ke tabel `incidents` di SQLite — kapan mulai/selesai insiden **bukan** sesuatu yang di-input manual lewat `/admin`. Tiap `statusPage` response otomatis membawa maks 15 insiden terbaru (`incidents`, sudah urut terbaru dulu) dari monitor-monitor yang ada di page itu; `endedAt: null` artinya insiden masih berlangsung. Yang bisa diisi manual cuma `note`-nya (lewat `PUT .../incidents/:incidentId`) — keterangan/root cause, opsional, nggak mempengaruhi deteksi/waktu insidennya sama sekali.
 
 Batasan yang perlu diketahui: state "status terakhir yang diobservasi" cuma disimpan di memory (bukan di database), jadi kalau backend di-restart pas ada monitor yang lagi down, transisi down→up berikutnya buat monitor itu tidak akan tercatat sebagai insiden yang "ditutup" (karena tracker menganggap itu observasi pertama, bukan pemulihan) — insiden historis yang sudah tercatat sebelum restart tetap aman, cuma satu insiden yang kebetulan lagi berlangsung pas restart itu yang datanya tidak lengkap.
 
