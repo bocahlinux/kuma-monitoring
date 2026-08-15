@@ -3,6 +3,7 @@ import { fetchHome } from './api';
 import GroupSection from './components/GroupSection';
 import StatRow from './components/StatRow';
 import ActiveIncidentBanner from './components/ActiveIncidentBanner';
+import MaintenanceBanner from './components/MaintenanceBanner';
 import PerformanceChart from './components/PerformanceChart';
 import IncidentsList from './components/IncidentsList';
 import ThemeToggle from './components/ThemeToggle';
@@ -76,6 +77,7 @@ export default function HomePage() {
       </header>
 
       <ActiveIncidentBanner incidents={activeIncidents} lastIncident={lastIncident} />
+      <MaintenanceBanner monitors={allMonitors} />
 
       <StatRow monitors={allMonitors} />
 

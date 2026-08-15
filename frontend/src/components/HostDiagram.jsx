@@ -1,15 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { STATUS_LABEL_ID } from '../statusMeta';
 import { getUptimeFraction, formatMeta } from '../monitorFormat';
+import { getCertWarning, formatCertWarning } from '../certFormat';
 
 function boxMeta(monitor) {
   return formatMeta(getUptimeFraction(monitor.live.uptime), monitor.live.ping);
+}
+
+// String stabil yang mewakili SEMUA teks di kotak ini -- dipakai di layoutKey biar
+// remeasure garis ikut kepicu kalau warning SSL muncul/hilang/berubah (baris ketiga
+// bikin kotaknya lebih tinggi), bukan cuma pas label/meta berubah.
+function boxLayoutText(monitor) {
+  const certWarning = getCertWarning(monitor.live.cert);
+  return `${monitor.label}:${boxMeta(monitor)}:${certWarning ? formatCertWarning(certWarning) : ''}`;
 }
 
 function DiagramNode({ monitor, isHost, nodeRef }) {
   const statusLabel = monitor.live.statusLabel || 'unknown';
   const statusText = STATUS_LABEL_ID[statusLabel] || STATUS_LABEL_ID.unknown;
   const meta = boxMeta(monitor);
+  const certWarning = getCertWarning(monitor.live.cert);
 
   return (
     <div ref={nodeRef} className={isHost ? 'diagram-box diagram-box--host' : 'diagram-box'}>
@@ -19,6 +29,11 @@ function DiagramNode({ monitor, isHost, nodeRef }) {
       <span className="diagram-box__text">
         <span className="diagram-box__name">{monitor.label}</span>
         {meta && <span className="diagram-box__meta">{meta}</span>}
+        {certWarning && (
+          <span className={`diagram-box__cert diagram-box__cert--${certWarning.severity}`}>
+            {formatCertWarning(certWarning)}
+          </span>
+        )}
       </span>
     </div>
   );
@@ -60,7 +75,7 @@ export default function HostDiagram({ primary, childMonitors }) {
   // sebagai dependency effect di bawah -- primitif string, jadi cuma memicu ukur ulang
   // pas teksnya BENERAN berubah, bukan tiap kali array monitor dari polling jadi
   // referensi baru (yang bisa berujung infinite render loop kalau depend ke array-nya).
-  const layoutKey = [primary, ...childMonitors].map((m) => `${m.label}:${boxMeta(m)}`).join('|');
+  const layoutKey = [primary, ...childMonitors].map(boxLayoutText).join('|');
 
   useEffect(() => {
     const container = containerRef.current;

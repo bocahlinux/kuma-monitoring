@@ -3,6 +3,7 @@ import { fetchStatusPage } from './api';
 import GroupSection from './components/GroupSection';
 import StatRow from './components/StatRow';
 import ActiveIncidentBanner from './components/ActiveIncidentBanner';
+import MaintenanceBanner from './components/MaintenanceBanner';
 import PerformanceChart from './components/PerformanceChart';
 import IncidentsList from './components/IncidentsList';
 import ThemeToggle from './components/ThemeToggle';
@@ -68,6 +69,7 @@ export default function App({ slug }) {
       </header>
 
       <ActiveIncidentBanner incidents={activeIncidents} lastIncident={data.lastIncident} />
+      <MaintenanceBanner monitors={data.monitors} />
 
       <StatRow monitors={data.monitors} />
 

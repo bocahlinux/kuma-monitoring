@@ -53,6 +53,8 @@ x-api-key: <API_KEY>
 | GET | `/health` | publik | Status backend + status koneksi ke Kuma |
 | GET | `/api/home` | **publik** | Gabungan semua status page yang di-toggle `showOnHome` — dipakai halaman `/` frontend |
 | GET | `/api/status-pages/:slug` | **publik** | Detail satu status page + status live monitor di dalamnya — dipakai halaman `/<slug>` frontend |
+| GET | `/api/status-pages/:slug/badge.svg` | **publik** | Badge status ala shields.io (`image/svg+xml`, cache 60 detik) — buat ditempel di README/wiki/dokumen lain di luar situs ini |
+| GET | `/api/home/badge.svg` | **publik** | Sama kayak di atas, tapi gabungan semua status page yang tampil di halaman utama |
 | GET | `/api/monitors` | API key | Semua monitor mentah + status terkini |
 | GET | `/api/monitors/:id` | API key | Detail satu monitor berdasarkan ID Kuma |
 | GET | `/api/monitors/hostname/:hostname` | API key | Cari monitor berdasarkan hostname (partial match) |
@@ -89,6 +91,7 @@ Setiap monitor (di `/api/monitors`, `/api/monitors/:id`, dan di dalam `monitors[
   "avgPing": 15.2,
   "uptime": { "24": 100, "720": 91.67 },   // key = periode dari Kuma, value = persen
   "cert": null,
+  "tags": [],                               // fitur tag Kuma, lihat catatan di bawah
   "heartbeats": [                           // maks 50 item terakhir, urut lama -> baru
     { "status": 1, "statusLabel": "up", "time": "...", "ping": 12, "msg": null }
   ]
@@ -96,6 +99,8 @@ Setiap monitor (di `/api/monitors`, `/api/monitors/:id`, dan di dalam `monitors[
 ```
 
 `heartbeats` ini yang dipakai buat bikin bar chart ala status page bawaan Kuma (tiap elemen = satu kotak/bar, warnanya dari `status`). Cuma nyimpen 50 heartbeat terakhir per monitor di memory (bukan seluruh history) — kalau butuh history lebih panjang dari itu, ambil langsung dari Kuma, bukan dari backend ini.
+
+`cert` (info sertifikat TLS, buat monitor HTTPS) dan `tags` (kategori berwarna per monitor) diteruskan **apa adanya** dari payload Kuma tanpa dinormalisasi — backend ini nggak mem-validasi bentuknya karena beda versi Kuma bisa beda struktur. Konsumen (frontend) baca kedua field ini secara defensif (`?.`, fallback ke nggak nampilin apa-apa kalau field yang diharapkan nggak ada), bukan mengasumsikan bentuknya pasti sama.
 
 ## Bentuk data status page (Groups)
 

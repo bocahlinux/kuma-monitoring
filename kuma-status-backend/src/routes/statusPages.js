@@ -1,6 +1,11 @@
 import { Router } from 'express';
+import { statusBadgeSvg } from '../badge.js';
 
 const MAX_INCIDENTS = 15;
+// Badge status berubah tiap heartbeat, tapi nggak butuh presisi detik -- cache
+// pendek biar embed di README/wiki nggak nge-hit backend tiap kali ada yang buka
+// halaman itu, tanpa nampilin status yang basi lama-lama.
+const BADGE_CACHE_CONTROL = 'public, max-age=60';
 
 function mapIncident(row, labelByMonitorId) {
   if (!row) return null;
@@ -110,6 +115,23 @@ export function createPublicStatusPagesRouter(repo, incidentsRepo, kumaClient) {
     const page = repo.getPageBySlug(req.params.slug);
     if (!page) return res.status(404).json({ error: 'Status page tidak ditemukan' });
     res.json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
+  });
+
+  // GET /api/status-pages/:slug/badge.svg - badge status ala shields.io, buat ditempel
+  // di README/wiki/dokumen lain di luar situs ini.
+  router.get('/status-pages/:slug/badge.svg', (req, res) => {
+    const page = repo.getPageBySlug(req.params.slug);
+    if (!page) return res.status(404).type('text/plain').send('status page tidak ditemukan');
+    const composed = composeFull(repo, incidentsRepo, page, kumaClient);
+    res.set('Content-Type', 'image/svg+xml').set('Cache-Control', BADGE_CACHE_CONTROL);
+    res.send(statusBadgeSvg(composed.overallStatus));
+  });
+
+  // GET /api/home/badge.svg - badge gabungan semua status page yang tampil di halaman utama
+  router.get('/home/badge.svg', (req, res) => {
+    const pages = repo.listVisiblePages().map((p) => composeFull(repo, incidentsRepo, p, kumaClient));
+    res.set('Content-Type', 'image/svg+xml').set('Cache-Control', BADGE_CACHE_CONTROL);
+    res.send(statusBadgeSvg(combinedOverallStatus(pages)));
   });
 
   return router;

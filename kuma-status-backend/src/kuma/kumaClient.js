@@ -216,6 +216,10 @@ class KumaClient extends EventEmitter {
       avgPing: this.avgPing.get(idNum) ?? null,
       uptime: this.uptime.get(idNum) || {},
       cert: this.certInfo.get(idNum) || null,
+      // Fitur tag Kuma (kategori berwarna per monitor) -- diteruskan apa adanya dari
+      // Kuma, bentuknya nggak kita normalisasi di sini. Konsumen (frontend) baca
+      // defensif (name/color/value bisa kosong tergantung versi Kuma).
+      tags: Array.isArray(monitor.tags) ? monitor.tags : [],
       // Buat bar chart di frontend, urut lama -> baru, maks MAX_HEARTBEAT_HISTORY item.
       heartbeats: history.map((h) => ({
         status: h.status,

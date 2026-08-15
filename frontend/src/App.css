@@ -110,6 +110,17 @@
   color: var(--status-good);
 }
 
+/* Netral (bukan merah/hijau) -- ini terjadwal/disengaja, bukan gangguan atau kabar
+   baik, jadi warnanya sengaja nggak dari status palette biar nggak disalahartikan. */
+.active-incident--maintenance {
+  border: 1px solid var(--border-strong);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}
+
+.active-incident--maintenance .active-incident__title {
+  color: var(--text-primary);
+}
+
 .active-incident__title {
   font-weight: 700;
   margin-bottom: 6px;
@@ -426,6 +437,7 @@
   position: relative;
   z-index: 1;
   display: flex;
+  align-items: flex-start;
   justify-content: safe center;
   flex-wrap: nowrap;
   column-gap: 28px;
@@ -471,6 +483,19 @@
   font-weight: 500;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+.diagram-box__cert {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.diagram-box__cert--warning {
+  color: color-mix(in srgb, var(--status-warning) 65%, var(--text-primary));
+}
+
+.diagram-box__cert--critical {
+  color: var(--status-critical);
 }
 
 .diagram-box--host {
@@ -540,6 +565,57 @@
   background: var(--accent);
   color: #fff;
   box-shadow: var(--shadow-sm);
+}
+
+/* Warna tag datang mentah dari Kuma (bisa hex apa aja) -- dipakai cuma buat titik
+   kecil (identitas kategori), BUKAN warna latar/teks penuh, biar kontras teksnya
+   tetap aman apa pun warnanya (teks selalu pakai token tema, bukan warna tag). */
+.tag-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-pill::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tag-color);
+}
+
+.cert-warning {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cert-warning--warning {
+  background: color-mix(in srgb, var(--status-warning) 20%, var(--surface));
+  color: color-mix(in srgb, var(--status-warning) 65%, var(--text-primary));
+}
+
+.cert-warning--critical {
+  background: color-mix(in srgb, var(--status-critical) 16%, var(--surface));
+  color: var(--status-critical);
 }
 
 /* Anggota grup yang ada host-nya di-render bersarang di sini (lihat GroupSection.jsx)
