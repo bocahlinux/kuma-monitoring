@@ -35,6 +35,7 @@ function DiagramNode({ monitor, isHost, nodeRef }) {
 export default function HostDiagram({ primary, childMonitors }) {
   const containerRef = useRef(null);
   const hostRef = useRef(null);
+  const childrenRowRef = useRef(null);
   const childRefs = useRef([]);
   const [lines, setLines] = useState([]);
 
@@ -46,6 +47,7 @@ export default function HostDiagram({ primary, childMonitors }) {
   useEffect(() => {
     const container = containerRef.current;
     const host = hostRef.current;
+    const childrenRow = childrenRowRef.current;
     if (!container || !host) return undefined;
 
     function measure() {
@@ -77,9 +79,14 @@ export default function HostDiagram({ primary, childMonitors }) {
     // Jaga-jaga layout belum settle di render pertama (misal font/ikon masih loading).
     const raf = requestAnimationFrame(measure);
     window.addEventListener('resize', measure);
+    // Anak-anaknya satu baris dan bisa di-scroll horizontal kalau banyak (lihat
+    // App.css) -- posisi kotaknya di layar berubah pas di-scroll, jadi garis
+    // harus ikut dihitung ulang, bukan cuma pas resize.
+    childrenRow?.addEventListener('scroll', measure, { passive: true });
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', measure);
+      childrenRow?.removeEventListener('scroll', measure);
     };
   }, [childMonitors.length]);
 
@@ -101,7 +108,7 @@ export default function HostDiagram({ primary, childMonitors }) {
         <DiagramNode monitor={primary} isHost nodeRef={hostRef} />
       </div>
       {childMonitors.length > 0 && (
-        <div className="diagram__children">
+        <div className="diagram__children" ref={childrenRowRef}>
           {childMonitors.map((m) => (
             <div key={m.kumaMonitorId} className="diagram__child-wrap">
               <DiagramNode monitor={m} nodeRef={registerChild} />

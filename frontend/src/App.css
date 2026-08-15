@@ -294,6 +294,10 @@
   border-radius: 14px;
   background: var(--surface);
   box-shadow: var(--shadow-sm);
+  /* Garis ke kotak yang lagi ter-scroll keluar (baris anak bisa scroll horizontal,
+     lihat .diagram__children) potensial digambar sampai di luar batas kartu ini --
+     dipotong rapi di sini, bukan "bocor" nembus konten lain di halaman. */
+  overflow: hidden;
 }
 
 /* Garis penghubung -- overlay SVG penuh di atas diagram, koordinat tiap <line>
@@ -335,18 +339,27 @@
   margin-bottom: 20px;
 }
 
+/* Sengaja satu baris (nowrap), bukan wrap -- kalau anaknya banyak dan wrap ke baris
+   kedua, garis lurus dari host ke baris kedua bakal nembus kotak-kotak di baris
+   pertama (numpuk, kelihatan berantakan). Satu baris + scroll horizontal jaga
+   geometri garisnya tetap bersih berapa pun jumlah anaknya. `safe center` = tetap
+   center kalau muat, otomatis jatuh ke rata-kiri begitu overflow (biar item paling
+   kiri nggak "hilang" ke luar area scroll -- itu yang terjadi kalau cuma `center`). */
 .diagram__children {
   position: relative;
   z-index: 1;
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
+  justify-content: safe center;
+  flex-wrap: nowrap;
   column-gap: 28px;
-  row-gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  max-width: 100%;
 }
 
 .diagram__child-wrap {
   display: flex;
+  flex-shrink: 0;
 }
 
 .diagram-box {

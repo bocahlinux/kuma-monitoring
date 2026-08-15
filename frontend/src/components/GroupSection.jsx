@@ -2,8 +2,10 @@ import MonitorRow from './MonitorRow';
 import HostDiagram from './HostDiagram';
 
 // Diagram cuma ditawarkan kalau jumlah anaknya wajar -- kebanyakan kotak bikin
-// diagramnya sesak/nggak kebaca, mendingan tetap list buat kasus itu.
-const MAX_DIAGRAM_CHILDREN = 6;
+// diagramnya sesak/nggak kebaca, mendingan tetap list buat kasus itu. Garis
+// penghubungnya diukur dari posisi asli tiap kotak (lihat HostDiagram.jsx), jadi
+// tetap presisi di angka ini -- batasnya murni soal kepadatan visual, bukan akurasi.
+const MAX_DIAGRAM_CHILDREN = 12;
 
 // Grup monitor dalam satu status page (fitur "Groups" ala Kuma). Kalau nama grup null
 // (monitor belum di-assign ke grup manapun), tampil tanpa header sama sekali.
