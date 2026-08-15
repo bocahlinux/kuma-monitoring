@@ -1,16 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { STATUS_LABEL_ID } from '../statusMeta';
+import { getUptimeFraction, formatMeta } from '../monitorFormat';
 
 function DiagramNode({ monitor, isHost, nodeRef }) {
   const statusLabel = monitor.live.statusLabel || 'unknown';
   const statusText = STATUS_LABEL_ID[statusLabel] || STATUS_LABEL_ID.unknown;
+  const meta = formatMeta(getUptimeFraction(monitor.live.uptime), monitor.live.ping);
 
   return (
     <div ref={nodeRef} className={isHost ? 'diagram-box diagram-box--host' : 'diagram-box'}>
       <span className={`status-dot status-dot--${statusLabel}`} title={statusText}>
         <span className="sr-only">{statusText}</span>
       </span>
-      <span className="diagram-box__name">{monitor.label}</span>
+      <span className="diagram-box__text">
+        <span className="diagram-box__name">{monitor.label}</span>
+        {meta && <span className="diagram-box__meta">{meta}</span>}
+      </span>
     </div>
   );
 }
