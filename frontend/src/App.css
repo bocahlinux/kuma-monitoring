@@ -268,6 +268,121 @@
   margin: 0 0 8px;
 }
 
+/* Dua tampilan hidup bareng di DOM, cuma satu yang kelihatan lewat CSS -- di bawah
+   breakpoint = list (ramah HP), di atasnya = diagram kotak-garis. Nggak pakai JS buat
+   deteksi lebar layar, jadi langsung reaktif kalau window di-resize. */
+.group__dual .group__diagram-view {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .group__dual .group__list-view {
+    display: none;
+  }
+  .group__dual .group__diagram-view {
+    display: block;
+  }
+}
+
+.diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.diagram__host {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.diagram__host::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 2px;
+  height: 20px;
+  background: var(--border-strong);
+}
+
+.diagram__children {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  row-gap: 20px;
+}
+
+.diagram__child-wrap {
+  position: relative;
+  padding: 20px 14px 0;
+}
+
+/* Garis vertikal turun dari bus horizontal ke tiap kotak anak. */
+.diagram__child-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 20px;
+  background: var(--border-strong);
+}
+
+/* Bus horizontal -- tiap anak gambar segmennya sendiri, nyambung jadi satu garis.
+   Anak pertama cuma gambar separuh kanan, anak terakhir cuma separuh kiri, jadi
+   bus-nya berhenti persis di kotak-tengah pertama & terakhir (bukan mepet ke tepi). */
+.diagram__child-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border-strong);
+}
+
+.diagram__child-wrap:first-child::after {
+  left: 50%;
+}
+
+.diagram__child-wrap:last-child::after {
+  right: 50%;
+}
+
+.diagram-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--page-bg);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+}
+
+.diagram-box__name {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.diagram-box--host {
+  padding: 12px 22px;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  box-shadow: var(--shadow-md);
+}
+
+.diagram-box--host .diagram-box__name {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
 /* Satu list bordered dengan divider tipis antar baris, bukan tumpukan card
    bulat terpisah -- lebih flat/elegan, konsisten sama .stat-row di atas. */
 .monitor-list {
