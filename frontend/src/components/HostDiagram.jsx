@@ -32,6 +32,13 @@ function DiagramNode({ monitor, isHost, nodeRef }) {
 // (kotak jadi lebih lebar, garis ke kotak lain ikut nggak lurus). Ngukur beneran
 // dari DOM otomatis benar buat berapa pun jumlah anaknya dan berapa pun lebar
 // kotaknya, tanpa perlu logika khusus per jumlah.
+//
+// Bentuk garisnya siku (drop-bus-drop ala org-chart), BUKAN garis lurus langsung
+// host->anak. Garis lurus sempat dicoba, tapi begitu anaknya banyak dan sebaris,
+// garis ke anak yang jauh dari host jadi hampir mendatar dan "menembus" kotak-kotak
+// lain yang dilewatinya di tengah jalan (ketutup kotak yang opaque, cuma sisa
+// potongan-potongan di celah -- keliatan zigzag berantakan). Bus horizontal di jalur
+// kosong antara baris host & anak nggak pernah numpuk kotak manapun.
 export default function HostDiagram({ primary, childMonitors }) {
   const containerRef = useRef(null);
   const hostRef = useRef(null);
@@ -59,20 +66,32 @@ export default function HostDiagram({ primary, childMonitors }) {
         setLines([]);
         return;
       }
-      const from = {
-        x: hostRect.left + hostRect.width / 2 - containerRect.left,
-        y: hostRect.bottom - containerRect.top,
-      };
-      const next = childRefs.current.map((el) => {
+      const hostX = hostRect.left + hostRect.width / 2 - containerRect.left;
+      const hostBottomY = hostRect.bottom - containerRect.top;
+
+      const childPoints = childRefs.current.map((el) => {
         const r = el.getBoundingClientRect();
         return {
-          x1: from.x,
-          y1: from.y,
-          x2: r.left + r.width / 2 - containerRect.left,
-          y2: r.top - containerRect.top,
+          x: r.left + r.width / 2 - containerRect.left,
+          topY: r.top - containerRect.top,
         };
       });
-      setLines(next);
+      if (!childPoints.length) {
+        setLines([]);
+        return;
+      }
+
+      const childTopY = Math.min(...childPoints.map((p) => p.topY));
+      const busY = hostBottomY + (childTopY - hostBottomY) / 2;
+      const allX = [hostX, ...childPoints.map((p) => p.x)];
+      const busX1 = Math.min(...allX);
+      const busX2 = Math.max(...allX);
+
+      setLines([
+        { x1: hostX, y1: hostBottomY, x2: hostX, y2: busY },
+        { x1: busX1, y1: busY, x2: busX2, y2: busY },
+        ...childPoints.map((p) => ({ x1: p.x, y1: busY, x2: p.x, y2: p.topY })),
+      ]);
     }
 
     measure();
