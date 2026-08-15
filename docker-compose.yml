@@ -46,15 +46,15 @@ services:
     mem_limit: 256m
     mem_reservation: 128m
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: monitoring-cloudflared
-    restart: unless-stopped
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-    networks:
-      - monitoring-network
-    mem_limit: 64m
-    mem_reservation: 32m
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: monitoring-cloudflared
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+  #   networks:
+  #     - monitoring-network
+  #   mem_limit: 64m
+  #   mem_reservation: 32m
 
   kuma-status-backend:
     build:
@@ -114,6 +114,8 @@ services:
       retries: 3
     mem_limit: 32m
     mem_reservation: 16m
+    ports:
+      - "100.83.41.88:80:80"
     # Sama kayak backend: tanpa "ports:", diakses lewat cloudflared tunnel saja.
     # NOTE: VITE_* di atas di-bake ke file statis SAAT BUILD, bukan runtime -- kalau
     # ganti FRONTEND_API_BASE_URL/slug/dll di .env, wajib rebuild ulang image-nya
