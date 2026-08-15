@@ -36,8 +36,8 @@ export default function MonitorRow({ monitor }) {
         <span className="sr-only">{statusText}</span>
       </span>
       <span className="monitor-row__name">{label}</span>
-      {meta && <span className="monitor-row__uptime">{meta}</span>}
       <HeartbeatBar heartbeats={live.heartbeats || []} />
+      {meta && <span className="monitor-row__uptime">{meta}</span>}
     </div>
   );
 }

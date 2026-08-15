@@ -3,6 +3,7 @@ import { fetchStatusPage } from './api';
 import GroupSection from './components/GroupSection';
 import StatRow from './components/StatRow';
 import IncidentsList from './components/IncidentsList';
+import ThemeToggle from './components/ThemeToggle';
 import './App.css';
 
 const POLL_INTERVAL_MS = Number(import.meta.env.VITE_POLL_INTERVAL_MS) || 20000;
@@ -55,8 +56,11 @@ export default function App({ slug }) {
   return (
     <div className="page">
       <header className="page__header">
-        <h1>{data.title}</h1>
-        {data.description && <p className="page__description">{data.description}</p>}
+        <div>
+          <h1>{data.title}</h1>
+          {data.description && <p className="page__description">{data.description}</p>}
+        </div>
+        <ThemeToggle />
       </header>
 
       <StatRow monitors={data.monitors} />

@@ -11,6 +11,16 @@
     <meta property="og:type" content="website" />
     <meta property="og:title" content="%VITE_HOME_TITLE%" />
     <meta property="og:description" content="%VITE_HOME_DESCRIPTION%" />
+    <script>
+      // Blocking & inline (bukan type="module") supaya jalan SEBELUM paint pertama --
+      // menghindari kedipan tema salah pas halaman baru dibuka.
+      (function () {
+        try {
+          var t = localStorage.getItem('kuma_status_theme');
+          if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -18,9 +18,11 @@ Kedua endpoint publik (`/api/home`, `/api/status-pages/:slug`) sengaja tanpa API
 - `src/stats.js` — hitung jumlah terhubung/terputus/total, dan rata-rata uptime jangka panjang, dari daftar monitor
 - `src/components/StatRow.jsx` — kartu ringkasan (Terhubung/Terputus/Total monitor/Uptime jangka panjang), dipakai `App` maupun `HomePage`
 - `src/components/GroupSection.jsx` — satu Group (header + daftar monitornya), dipakai `App` maupun `HomePage`; tanpa header kalau grup-nya `null` (monitor belum di-assign)
-- `src/components/MonitorRow.jsx` — satu baris monitor: dot status + nama + persentase uptime + response time + bar heartbeat sejajar
-- `src/components/HeartbeatBar.jsx` — bar heartbeat inline di samping nama; kalau nggak muat, cell tertua terpotong rapi di sisi kiri (bukan bikin baris meluber)
+- `src/components/MonitorRow.jsx` — satu baris monitor: dot status + nama + bar heartbeat + kolom persentase uptime/response time rata kanan di ujung
+- `src/components/HeartbeatBar.jsx` — bar heartbeat di tengah baris; kalau nggak muat, cell tertua terpotong rapi di sisi kiri (bukan bikin baris meluber)
 - `src/components/IncidentsList.jsx` — daftar insiden terbaru (deteksi otomatis oleh backend, lihat README backend); nggak render apa-apa kalau belum pernah ada insiden
+- `src/components/ThemeToggle.jsx` — tombol toggle mode terang/gelap, disimpan ke `localStorage` per device
+- `src/theme.js` — baca/tulis preferensi tema; anti-kedipan tema salah ditangani inline script blocking di `index.html` (jalan sebelum CSS ke-parse)
 - `src/statusMeta.js` — ikon + label Indonesia per status (`up`/`down`/`pending`/`maintenance`/`unknown`), satu sumber dipakai halaman publik & admin
 - `src/admin/adminApi.js` — fetch ke endpoint admin backend, kirim header `x-api-key` (disimpan di `sessionStorage`, hilang begitu tab ditutup)
 - `src/admin/AdminApp.jsx` — orchestrator halaman admin (login → list status page → editor)

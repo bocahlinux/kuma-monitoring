@@ -3,6 +3,7 @@ import { fetchHome } from './api';
 import GroupSection from './components/GroupSection';
 import StatRow from './components/StatRow';
 import IncidentsList from './components/IncidentsList';
+import ThemeToggle from './components/ThemeToggle';
 import './App.css';
 
 const POLL_INTERVAL_MS = Number(import.meta.env.VITE_POLL_INTERVAL_MS) || 20000;
@@ -63,6 +64,7 @@ export default function HomePage() {
     <div className="page">
       <header className="page__header">
         <h1>{HOME_TITLE}</h1>
+        <ThemeToggle />
       </header>
 
       <StatRow monitors={allMonitors} />
