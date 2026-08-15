@@ -82,6 +82,39 @@
   }
 }
 
+/* Kotak menonjol kalau ada insiden yang MASIH berlangsung -- sengaja beda gaya dari
+   kartu lain (border solid + latar tinted merah) biar langsung kena mata, ditempatkan
+   paling atas sebelum stat-row. */
+.active-incident {
+  border: 1px solid color-mix(in srgb, var(--status-critical) 40%, var(--border));
+  background: color-mix(in srgb, var(--status-critical) 8%, var(--surface));
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.active-incident__title {
+  font-weight: 700;
+  color: var(--status-critical);
+  margin-bottom: 6px;
+}
+
+.active-incident__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.active-incident__meta {
+  color: var(--text-secondary);
+  margin-left: 6px;
+}
+
 /* Kartu ringkasan -- satu card, dibagi garis tipis 1px lewat grid gap (bukan tiga/empat
    card terpisah). Jumlah kolom otomatis ngikut jumlah tile (3 atau 4, tergantung data
    uptime jangka panjang tersedia atau nggak) lewat grid-auto-flow: column. */
@@ -102,12 +135,36 @@
   background: var(--surface);
   padding: 14px 16px;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
 }
 
+.stat__icon {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.stat__icon--good {
+  background: var(--status-good);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-good) 16%, transparent);
+}
+.stat__icon--critical {
+  background: var(--status-critical);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-critical) 16%, transparent);
+}
+.stat__icon--accent {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.stat__icon--muted {
+  background: var(--border-strong);
+}
+
 .stat__label {
+  display: block;
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-secondary);
@@ -119,6 +176,7 @@
 }
 
 .stat__value {
+  display: block;
   font-size: 1.65rem;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -127,6 +185,50 @@
 
 .stat__value--critical {
   color: var(--status-critical);
+}
+
+/* Tile persentase (Uptime jangka panjang) -- satu-satunya yang pakai gauge lingkaran,
+   bukan angka polos, karena ini nilai bounded 0-100%. Layout beda dari tile lain
+   (ring + label, bukan icon + angka). */
+.stat--ring {
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.uptime-ring__text {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--text-primary);
+}
+
+.perf-chart {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 14px 16px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+}
+
+.perf-chart__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.perf-chart__value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.perf-chart__svg {
+  display: block;
+  width: 100%;
+  height: 40px;
 }
 
 .category {

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { fetchHome } from './api';
 import GroupSection from './components/GroupSection';
 import StatRow from './components/StatRow';
+import ActiveIncidentBanner from './components/ActiveIncidentBanner';
+import PerformanceChart from './components/PerformanceChart';
 import IncidentsList from './components/IncidentsList';
 import ThemeToggle from './components/ThemeToggle';
 import './App.css';
@@ -59,6 +61,7 @@ export default function HomePage() {
     .flatMap((p) => p.incidents.map((inc) => ({ ...inc, monitorLabel: `${inc.monitorLabel} — ${p.title}` })))
     .sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))
     .slice(0, MAX_INCIDENTS);
+  const activeIncidents = allIncidents.filter((i) => !i.endedAt);
 
   return (
     <div className="page">
@@ -67,7 +70,11 @@ export default function HomePage() {
         <ThemeToggle />
       </header>
 
+      <ActiveIncidentBanner incidents={activeIncidents} />
+
       <StatRow monitors={allMonitors} />
+
+      <PerformanceChart monitors={allMonitors} />
 
       {pages.length === 0 && <p className="page__description">Belum ada status page yang ditampilkan di sini.</p>}
 

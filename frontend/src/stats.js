@@ -18,3 +18,25 @@ export function computeUptimeSummary(monitors, periodKey) {
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
   return Math.round(avg * 10000) / 100;
 }
+
+// Tren response time gabungan -- dirata-ratakan PER POSISI "seberapa lama yang lalu"
+// (bukan jam beneran, karena tiap monitor check-nya nggak sinkron), dari heartbeat yang
+// sudah kepakai buat bar chart (nggak fetch data baru). Diurut lama -> baru.
+export function buildPingTrend(monitors, maxPoints = 30) {
+  const series = monitors.map((m) => (m.live?.heartbeats || []).filter((h) => typeof h.ping === 'number'));
+  const longest = Math.max(0, ...series.map((s) => s.length));
+  const n = Math.min(longest, maxPoints);
+  if (!n) return [];
+
+  const points = [];
+  for (let offsetFromEnd = n; offsetFromEnd >= 1; offsetFromEnd--) {
+    const values = series
+      .map((s) => s[s.length - offsetFromEnd])
+      .filter((h) => h && typeof h.ping === 'number')
+      .map((h) => h.ping);
+    if (values.length) {
+      points.push(values.reduce((a, b) => a + b, 0) / values.length);
+    }
+  }
+  return points;
+}

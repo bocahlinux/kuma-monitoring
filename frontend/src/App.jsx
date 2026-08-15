@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { fetchStatusPage } from './api';
 import GroupSection from './components/GroupSection';
 import StatRow from './components/StatRow';
+import ActiveIncidentBanner from './components/ActiveIncidentBanner';
+import PerformanceChart from './components/PerformanceChart';
 import IncidentsList from './components/IncidentsList';
 import ThemeToggle from './components/ThemeToggle';
 import './App.css';
@@ -53,6 +55,8 @@ export default function App({ slug }) {
     );
   }
 
+  const activeIncidents = data.incidents.filter((i) => !i.endedAt);
+
   return (
     <div className="page">
       <header className="page__header">
@@ -63,7 +67,11 @@ export default function App({ slug }) {
         <ThemeToggle />
       </header>
 
+      <ActiveIncidentBanner incidents={activeIncidents} />
+
       <StatRow monitors={data.monitors} />
+
+      <PerformanceChart monitors={data.monitors} />
 
       <main>
         {data.groups.map((g) => (

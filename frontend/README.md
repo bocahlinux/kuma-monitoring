@@ -15,8 +15,11 @@ Kedua endpoint publik (`/api/home`, `/api/status-pages/:slug`) sengaja tanpa API
 - `src/api.js` — fetch ke backend (status page publik)
 - `src/App.jsx` — halaman `/<slug>`: state, polling, satu kategori
 - `src/HomePage.jsx` — halaman `/`: fetch `/api/home`, render tiap status page sebagai section kategori
-- `src/stats.js` — hitung jumlah terhubung/terputus/total, dan rata-rata uptime jangka panjang, dari daftar monitor
-- `src/components/StatRow.jsx` — kartu ringkasan (Terhubung/Terputus/Total monitor/Uptime jangka panjang), dipakai `App` maupun `HomePage`
+- `src/stats.js` — hitung jumlah terhubung/terputus/total, rata-rata uptime jangka panjang, dan tren response time gabungan (`buildPingTrend`, dari heartbeat yang sudah ke-fetch, bukan endpoint baru), dari daftar monitor
+- `src/components/StatRow.jsx` — kartu ringkasan (Terhubung/Terputus/Total monitor pakai ikon bulat warna; Uptime jangka panjang pakai `UptimeRing` gauge — satu-satunya tile yang gauge, karena cuma itu yang persentase/bounded), dipakai `App` maupun `HomePage`
+- `src/components/UptimeRing.jsx` — gauge lingkaran SVG buat persentase uptime
+- `src/components/ActiveIncidentBanner.jsx` — kotak menonjol di atas kalau ada insiden yang masih berlangsung (`endedAt: null`); difilter dari data `incidents` yang sudah ada, nggak fetch tambahan. Nggak render apa-apa kalau nggak ada yang aktif
+- `src/components/PerformanceChart.jsx` — sparkline SVG sederhana (bukan library), tren response time rata-rata gabungan semua monitor
 - `src/components/GroupSection.jsx` — satu Group (header + daftar monitornya), dipakai `App` maupun `HomePage`; tanpa header kalau grup-nya `null` (monitor belum di-assign). Kalau salah satu monitornya `isPrimary` (host, misal server Proxmox utama), dia dirender di atas sebagai baris tersendiri, dan sisanya (CT/VM-nya) di-bungkus dalam `.monitor-children` di bawahnya — garis vertikal + indentasi bikin hubungan induk-anak kelihatan jelas. Tanpa host, grup tetap flat seperti biasa.
 - `src/components/MonitorRow.jsx` — satu baris monitor: dot status + nama + bar heartbeat + kolom persentase uptime/response time rata kanan di ujung. Kalau `monitor.isPrimary`, baris ini tampil lebih besar/tebal + badge "HOST" + aksen warna di sisi kiri
 - `src/components/HeartbeatBar.jsx` — bar heartbeat di tengah baris; kalau nggak muat, cell tertua terpotong rapi di sisi kiri (bukan bikin baris meluber)
