@@ -83,12 +83,16 @@ class KumaClient extends EventEmitter {
     });
 
     this.socket.on('heartbeatList', (monitorID, data, overwrite) => {
-      // Kuma ngirim ini penuh (overwrite=true) tiap kali monitor pertama kali disinkron
-      // setelah login. Kita nggak pernah minta history lama (pagination), jadi kalau
-      // overwrite=false kita abaikan saja daripada nyimpen data tak terbatas.
-      if (!overwrite) return;
-      const list = (Array.isArray(data) ? data : []).slice(-MAX_HEARTBEAT_HISTORY);
-      this.heartbeatHistory.set(monitorID, list);
+      // Awalnya kode ini CUMA nerima kalau overwrite=true (asumsi: itu satu-satunya
+      // sync awal yang beneran, sisanya pagination yang nggak pernah kita minta).
+      // Ternyata asumsi itu bikin history kepotong -- Kuma kadang ngirim sync awal
+      // dalam beberapa event dengan overwrite=false juga. Sekarang overwrite=false
+      // di-APPEND (bukan diabaikan), tetap di-cap MAX_HEARTBEAT_HISTORY jadi nggak
+      // mungkin tumbuh tak terbatas walau ternyata itu beneran event pagination.
+      const incoming = Array.isArray(data) ? data : [];
+      const existing = this.heartbeatHistory.get(monitorID) || [];
+      const merged = overwrite ? incoming : [...existing, ...incoming];
+      this.heartbeatHistory.set(monitorID, merged.slice(-MAX_HEARTBEAT_HISTORY));
       this.emit('update', { type: 'heartbeatList', monitorId: monitorID });
     });
 
