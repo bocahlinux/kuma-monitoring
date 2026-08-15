@@ -41,9 +41,10 @@
 .admin-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
 }
 
 .admin-card h2 {
@@ -71,6 +72,17 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   margin: 0 0 8px;
+}
+
+.admin-host-tag {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
 }
 
 .admin-list {

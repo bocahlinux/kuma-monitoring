@@ -109,6 +109,9 @@ export default function StatusPageEditor({ slug, onBack, onSlugChanged }) {
   const removeMonitor = (kumaMonitorId) =>
     runAction(() => adminApi.removeMonitor(slug, kumaMonitorId));
 
+  const togglePrimary = (kumaMonitorId) =>
+    runAction(() => adminApi.togglePrimary(slug, kumaMonitorId));
+
   const saveLabel = (m) =>
     runAction(() =>
       adminApi.addMonitor(slug, {
@@ -274,6 +277,7 @@ export default function StatusPageEditor({ slug, onBack, onSlugChanged }) {
                     <span aria-hidden="true">{STATUS_ICON[m.live.statusLabel] || STATUS_ICON.unknown}</span>
                     {STATUS_LABEL_ID[m.live.statusLabel] || STATUS_LABEL_ID.unknown}
                   </span>
+                  {m.isPrimary && <span className="admin-host-tag">HOST</span>}
                   <input
                     className="admin-list__label-input"
                     value={labelDrafts[m.kumaMonitorId] ?? m.label}
@@ -307,6 +311,11 @@ export default function StatusPageEditor({ slug, onBack, onSlugChanged }) {
                     <button className="btn" disabled={busy} onClick={() => saveLabel(m)}>
                       Simpan label
                     </button>
+                    {g.id != null && (
+                      <button className="btn" disabled={busy} onClick={() => togglePrimary(m.kumaMonitorId)}>
+                        {m.isPrimary ? 'Batal jadi host' : 'Jadikan host'}
+                      </button>
+                    )}
                     <button
                       className="btn btn--danger"
                       disabled={busy}

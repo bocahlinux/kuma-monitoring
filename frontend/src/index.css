@@ -17,6 +17,10 @@
 
   /* UI accent (admin panel buttons/links) -- categorical slot 1, not used as a data series here. */
   --accent: #2a78d6;
+
+  /* Elevation -- soft, restrained shadows for a "raised card" feel (not flat, not gaudy). */
+  --shadow-sm: 0 1px 2px rgba(11, 11, 11, 0.05), 0 3px 10px rgba(11, 11, 11, 0.06);
+  --shadow-md: 0 2px 4px rgba(11, 11, 11, 0.06), 0 10px 24px rgba(11, 11, 11, 0.09);
 }
 
 /* OS/browser lagi dark DAN user belum milih tema manual -- :not([data-theme="light"])
@@ -32,6 +36,10 @@
     --border: #2c2c2a;
     --border-strong: #383835;
     --accent: #3987e5;
+    /* Bayangan hitam nyaris nggak kelihatan di atas background gelap -- elevasi di dark
+       mode dikomunikasikan lewat shadow yang lebih besar & gelap pekat, bukan makin tipis. */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 3px 10px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.4), 0 12px 28px rgba(0, 0, 0, 0.38);
   }
 }
 
@@ -46,6 +54,8 @@
   --border: #2c2c2a;
   --border-strong: #383835;
   --accent: #3987e5;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 3px 10px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.4), 0 12px 28px rgba(0, 0, 0, 0.38);
 }
 
 :root[data-theme='light'] {
@@ -58,6 +68,8 @@
   --border: #e1e0d9;
   --border-strong: #c3c2b7;
   --accent: #2a78d6;
+  --shadow-sm: 0 1px 2px rgba(11, 11, 11, 0.05), 0 3px 10px rgba(11, 11, 11, 0.06);
+  --shadow-md: 0 2px 4px rgba(11, 11, 11, 0.06), 0 10px 24px rgba(11, 11, 11, 0.09);
 }
 
 * {

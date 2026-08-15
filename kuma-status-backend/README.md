@@ -64,7 +64,12 @@ x-api-key: <API_KEY>
 | PUT | `/api/status-pages/:slug/groups/:groupId` | API key | Ubah nama/urutan grup — body: `{ name?, sortOrder? }` |
 | DELETE | `/api/status-pages/:slug/groups/:groupId` | API key | Hapus grup — monitor di dalamnya **tidak ikut terhapus**, cuma jadi tanpa grup |
 | POST | `/api/status-pages/:slug/monitors` | API key | Tambah/update monitor di status page — body: `{ kumaMonitorId, customLabel, sortOrder, groupId? }` (`groupId: null`/dikosongkan = tanpa grup) |
+| PUT | `/api/status-pages/:slug/monitors/:kumaMonitorId/primary` | API key | Toggle jadi/bukan "host" grupnya — lihat "Host per grup" di bawah |
 | DELETE | `/api/status-pages/:slug/monitors/:kumaMonitorId` | API key | Keluarkan monitor dari status page |
+
+## Host per grup (dinamis)
+
+Satu monitor dalam satu grup bisa ditandai sebagai **host** (misal server Proxmox utama, dengan CT/VM-nya sebagai anggota grup yang sama) lewat `PUT .../monitors/:kumaMonitorId/primary` — endpoint ini **toggle**, bukan set: panggil sekali untuk jadi host (otomatis melepas host lama di grup yang sama, cuma boleh satu per grup), panggil lagi untuk melepas. Monitor yang jadi host otomatis tampil **paling atas** dalam grupnya di response (`groups[].monitors`), apa pun `sortOrder`-nya — dan field `isPrimary: true` ikut kebawa di objek monitor. Pindah host kapan saja lewat endpoint yang sama, nggak ada batasan permanen.
 
 ## Bentuk data monitor
 

@@ -18,7 +18,7 @@ Kedua endpoint publik (`/api/home`, `/api/status-pages/:slug`) sengaja tanpa API
 - `src/stats.js` — hitung jumlah terhubung/terputus/total, dan rata-rata uptime jangka panjang, dari daftar monitor
 - `src/components/StatRow.jsx` — kartu ringkasan (Terhubung/Terputus/Total monitor/Uptime jangka panjang), dipakai `App` maupun `HomePage`
 - `src/components/GroupSection.jsx` — satu Group (header + daftar monitornya), dipakai `App` maupun `HomePage`; tanpa header kalau grup-nya `null` (monitor belum di-assign)
-- `src/components/MonitorRow.jsx` — satu baris monitor: dot status + nama + bar heartbeat + kolom persentase uptime/response time rata kanan di ujung
+- `src/components/MonitorRow.jsx` — satu baris monitor: dot status + nama + bar heartbeat + kolom persentase uptime/response time rata kanan di ujung. Kalau `monitor.isPrimary` (ditandai "host" di `/admin`, misal server Proxmox utama dengan CT/VM sebagai anggota grup yang sama), baris ini tampil beda: label tebal, badge "HOST", aksen warna di sisi kiri, dan baris-baris sesudahnya dalam grup yang sama otomatis sedikit menjorok (lewat CSS sibling selector, bukan ditandai satu-satu)
 - `src/components/HeartbeatBar.jsx` — bar heartbeat di tengah baris; kalau nggak muat, cell tertua terpotong rapi di sisi kiri (bukan bikin baris meluber)
 - `src/components/IncidentsList.jsx` — daftar insiden terbaru (deteksi otomatis oleh backend, lihat README backend); nggak render apa-apa kalau belum pernah ada insiden
 - `src/components/ThemeToggle.jsx` — tombol toggle mode terang/gelap, disimpan ke `localStorage` per device

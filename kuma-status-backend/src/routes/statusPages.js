@@ -10,6 +10,7 @@ function composePage(page, pageMonitors, pageGroups, incidentRows, kumaClient) {
       label: pm.custom_label || live?.name || `Monitor #${pm.kuma_monitor_id}`,
       sortOrder: pm.sort_order,
       groupId: pm.group_id ?? null,
+      isPrimary: !!pm.is_primary,
       live: live || { id: pm.kuma_monitor_id, status: null, statusLabel: 'unknown' },
     };
   });
@@ -22,16 +23,21 @@ function composePage(page, pageMonitors, pageGroups, incidentRows, kumaClient) {
 
   const sortedMonitors = [...monitors].sort((a, b) => a.sortOrder - b.sortOrder);
 
+  // Monitor primary ("host") selalu tampil duluan dalam grupnya, apa pun sortOrder-nya
+  // -- Array.sort stabil (ES2019+) jadi urutan sortOrder yang lain tetap kejaga di antara
+  // sesama monitor yang bukan primary.
+  const byPrimaryFirst = (list) => [...list].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
+
   const namedGroups = [...pageGroups]
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((g) => ({
       id: g.id,
       name: g.name,
       sortOrder: g.sort_order,
-      monitors: sortedMonitors.filter((m) => m.groupId === g.id),
+      monitors: byPrimaryFirst(sortedMonitors.filter((m) => m.groupId === g.id)),
     }));
 
-  const ungroupedMonitors = sortedMonitors.filter((m) => m.groupId == null);
+  const ungroupedMonitors = byPrimaryFirst(sortedMonitors.filter((m) => m.groupId == null));
   // Grup semu buat monitor yang belum di-assign ke grup manapun -- selalu tampil
   // duluan, tanpa header (name: null) kalau memang ada isinya.
   const groups = ungroupedMonitors.length
@@ -219,6 +225,14 @@ export function createStatusPagesRouter(repo, incidentsRepo, kumaClient) {
 
     repo.addMonitor(page.id, { kumaMonitorId, customLabel, sortOrder, groupId });
     res.status(201).json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
+  });
+
+  // PUT /api/status-pages/:slug/monitors/:kumaMonitorId/primary - toggle jadi/bukan "host" grupnya
+  router.put('/status-pages/:slug/monitors/:kumaMonitorId/primary', (req, res) => {
+    const page = requirePage(req, res);
+    if (!page) return;
+    repo.togglePrimaryMonitor(page.id, Number(req.params.kumaMonitorId));
+    res.json({ statusPage: composeFull(repo, incidentsRepo, page, kumaClient) });
   });
 
   // DELETE /api/status-pages/:slug/monitors/:kumaMonitorId

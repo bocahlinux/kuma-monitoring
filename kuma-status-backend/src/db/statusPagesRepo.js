@@ -23,12 +23,40 @@ export function createStatusPagesRepo(db) {
     getPageMonitors(statusPageId) {
       return db
         .prepare(
-          `SELECT kuma_monitor_id, custom_label, sort_order, group_id
+          `SELECT kuma_monitor_id, custom_label, sort_order, group_id, is_primary
            FROM status_page_monitors
            WHERE status_page_id = ?
            ORDER BY sort_order ASC, id ASC`
         )
         .all(statusPageId);
+    },
+
+    // Nandain satu monitor sebagai "host"/utama dalam grup-nya (dinamis, bisa
+    // dipindah kapan saja) -- toggle: kalau dia udah primary, dilepas; kalau belum,
+    // jadi primary dan otomatis melepas primary lain di grup yang sama (cuma boleh
+    // satu per grup). Grup diambil dari data monitor itu sendiri, bukan dari input,
+    // supaya nggak bisa "salah sasaran" grup.
+    togglePrimaryMonitor(statusPageId, kumaMonitorId) {
+      const row = db
+        .prepare('SELECT group_id, is_primary FROM status_page_monitors WHERE status_page_id = ? AND kuma_monitor_id = ?')
+        .get(statusPageId, kumaMonitorId);
+      if (!row) return;
+      const groupId = row.group_id;
+      const makePrimary = !row.is_primary;
+
+      const tx = db.transaction(() => {
+        db.prepare(
+          `UPDATE status_page_monitors
+           SET is_primary = 0
+           WHERE status_page_id = ? AND (group_id = ? OR (group_id IS NULL AND ? IS NULL))`
+        ).run(statusPageId, groupId, groupId);
+        if (makePrimary) {
+          db.prepare(
+            'UPDATE status_page_monitors SET is_primary = 1 WHERE status_page_id = ? AND kuma_monitor_id = ?'
+          ).run(statusPageId, kumaMonitorId);
+        }
+      });
+      tx();
     },
 
     listGroups(statusPageId) {

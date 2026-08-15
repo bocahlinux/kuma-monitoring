@@ -69,4 +69,7 @@ function migrate(db) {
     // ALTER TABLE. Integritasnya dijaga di kode repo (deleteGroup null-in dulu sebelum hapus).
     db.exec('ALTER TABLE status_page_monitors ADD COLUMN group_id INTEGER');
   }
+  if (!monitorColumns.some((c) => c.name === 'is_primary')) {
+    db.exec('ALTER TABLE status_page_monitors ADD COLUMN is_primary INTEGER NOT NULL DEFAULT 0');
+  }
 }
