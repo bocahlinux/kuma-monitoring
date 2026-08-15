@@ -188,21 +188,19 @@
 }
 
 /* Baris "host" -- ditandai manual di /admin, selalu tampil duluan dalam grupnya
-   (lihat backend). Sedikit lebih menonjol: latar beda tipis + elevasi sendiri,
-   BUKAN dominan/norak -- tetap satu keluarga visual sama baris biasa. */
+   (lihat backend). Dibuat jelas beda dari anggota biasa: lebih besar, tebal, latar
+   & aksen warna sendiri -- supaya "ini induknya" kelihatan sekilas pandang. */
 .monitor-row--primary {
   position: relative;
-  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  padding-top: 14px;
+  padding-bottom: 14px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .monitor-row--primary .monitor-row__name {
   font-weight: 700;
-}
-
-/* Baris sesudah host (anak-anaknya) dijorokin dikit -- keliatan "di bawah" host-nya. */
-.monitor-row--primary ~ .monitor-row {
-  padding-left: 30px;
+  font-size: 0.96rem;
 }
 
 .host-tag {
@@ -215,6 +213,26 @@
   background: var(--accent);
   color: #fff;
   box-shadow: var(--shadow-sm);
+}
+
+/* Anggota grup yang ada host-nya di-render bersarang di sini (lihat GroupSection.jsx)
+   -- garis vertikal + indentasi bikin hubungan "ini di bawah host di atas" kelihatan
+   jelas tanpa perlu diagram/graph beneran. */
+.monitor-children {
+  margin-left: 24px;
+  padding-left: 14px;
+  border-left: 2px solid color-mix(in srgb, var(--accent) 35%, var(--border-strong));
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--text-primary) 2%, transparent);
+}
+
+.monitor-children .monitor-row + .monitor-row {
+  border-top: 1px solid var(--border);
+}
+
+.monitor-children .monitor-row__name {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
 }
 
 .status-dot {
