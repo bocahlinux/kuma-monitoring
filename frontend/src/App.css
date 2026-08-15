@@ -307,7 +307,15 @@
   left: 50%;
   width: 2px;
   height: 20px;
-  background: var(--border-strong);
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--diagram-line) 0,
+    var(--diagram-line) 3px,
+    transparent 3px,
+    transparent 7px
+  );
+  background-size: 100% 14px;
+  animation: diagram-flow-y 0.9s linear infinite;
 }
 
 .diagram__children {
@@ -330,7 +338,15 @@
   left: 50%;
   width: 2px;
   height: 20px;
-  background: var(--border-strong);
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--diagram-line) 0,
+    var(--diagram-line) 3px,
+    transparent 3px,
+    transparent 7px
+  );
+  background-size: 100% 14px;
+  animation: diagram-flow-y 0.9s linear infinite;
 }
 
 /* Bus horizontal -- tiap anak gambar segmennya sendiri, nyambung jadi satu garis.
@@ -343,7 +359,15 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--border-strong);
+  background: repeating-linear-gradient(
+    to right,
+    var(--diagram-line) 0,
+    var(--diagram-line) 3px,
+    transparent 3px,
+    transparent 7px
+  );
+  background-size: 14px 100%;
+  animation: diagram-flow-x 0.9s linear infinite;
 }
 
 .diagram__child-wrap:first-child::after {
@@ -352,6 +376,29 @@
 
 .diagram__child-wrap:last-child::after {
   right: 50%;
+}
+
+/* Garis "mengalir" -- dash animasi bergerak dari host ke anak, biar diagramnya nggak
+   statis. var(--diagram-line) = aksen dicampur abu-abu, biar keliatan tapi nggak norak.
+   Dihormati prefers-reduced-motion buat yang sensitif ke gerakan. */
+@keyframes diagram-flow-y {
+  to {
+    background-position-y: 14px;
+  }
+}
+
+@keyframes diagram-flow-x {
+  to {
+    background-position-x: -14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diagram__host::after,
+  .diagram__child-wrap::before,
+  .diagram__child-wrap::after {
+    animation: none;
+  }
 }
 
 .diagram-box {
