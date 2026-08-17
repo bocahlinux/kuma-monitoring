@@ -17,6 +17,13 @@ export const config = {
   },
 
   dbPath: requireEnv('DB_PATH', './data/app.db'),
+
+  adminUsername: requireEnv('ADMIN_USERNAME', ''),
+  adminPassword: requireEnv('ADMIN_PASSWORD', ''),
+  // "true" cuma aman kalau backend/frontend SELALU diakses lewat HTTPS. Biarkan
+  // "false" (default) kalau juga diakses langsung lewat IP lokal/Tailscale via HTTP
+  // biasa -- kalau "true" di situasi itu, cookie sesi nggak akan pernah kekirim balik.
+  cookieSecure: process.env.COOKIE_SECURE === 'true',
 };
 
 if (!config.kuma.username || !config.kuma.password) {

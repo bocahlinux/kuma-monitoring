@@ -3,7 +3,7 @@ import { adminApi } from '../adminApi';
 
 const SLUG_RE = /^[a-z0-9-]+$/;
 
-export default function StatusPageList({ pages, onOpen, onChanged, onLogout }) {
+export default function StatusPageList({ pages, onOpen, onChanged, onLogout, onManageUsers }) {
   const [slug, setSlug] = useState('');
   const [title, setTitle] = useState('');
   const [showOnHome, setShowOnHome] = useState(true);
@@ -47,9 +47,14 @@ export default function StatusPageList({ pages, onOpen, onChanged, onLogout }) {
     <div className="admin-page">
       <header className="admin-page__header">
         <h1>Status Page — Admin</h1>
-        <button className="btn btn--ghost" onClick={onLogout}>
-          Keluar
-        </button>
+        <div className="admin-list__actions">
+          <button className="btn" onClick={onManageUsers}>
+            Kelola User
+          </button>
+          <button className="btn btn--ghost" onClick={onLogout}>
+            Keluar
+          </button>
+        </div>
       </header>
 
       <section className="admin-card">

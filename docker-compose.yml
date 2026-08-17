@@ -46,16 +46,6 @@ services:
     mem_limit: 256m
     mem_reservation: 128m
 
-  # cloudflared:
-  #   image: cloudflare/cloudflared:latest
-  #   container_name: monitoring-cloudflared
-  #   restart: unless-stopped
-  #   command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-  #   networks:
-  #     - monitoring-network
-  #   mem_limit: 64m
-  #   mem_reservation: 32m
-
   kuma-status-backend:
     build:
       context: ./kuma-status-backend
@@ -70,6 +60,9 @@ services:
       - API_KEY=${API_KEY}
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
       - DB_PATH=/app/data/app.db
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - COOKIE_SECURE=${COOKIE_SECURE:-false}
     volumes:
       - ./data/kuma-status-backend:/app/data
     networks:
@@ -87,8 +80,8 @@ services:
       - "100.83.41.88:4000:4000"
     # Cuma di-bind ke IP Tailscale (100.83.41.88), bukan ke semua interface -- jadi
     # nggak nambah paparan ke internet publik, cuma buat kamu akses langsung/testing
-    # lewat Tailscale. Endpoint publik (status page) tetap lewat cloudflared -> frontend
-    # -> nginx proxy seperti biasa; endpoint admin di sini tetap wajib x-api-key.
+    # lewat Tailscale. Endpoint publik (status page) tetap lewat frontend -> nginx
+    # proxy seperti biasa; endpoint admin di sini tetap wajib login/x-api-key.
 
   frontend:
     build:
@@ -116,7 +109,8 @@ services:
     mem_reservation: 16m
     ports:
       - "100.83.41.88:80:80"
-    # Sama kayak backend: tanpa "ports:", diakses lewat cloudflared tunnel saja.
+    # Sama kayak backend: di-bind ke IP Tailscale (100.83.41.88) saja, bukan ke semua
+    # interface -- diakses langsung lewat Tailscale, tanpa Cloudflare Tunnel.
     # NOTE: VITE_* di atas di-bake ke file statis SAAT BUILD, bukan runtime -- kalau
     # ganti FRONTEND_API_BASE_URL/slug/dll di .env, wajib rebuild ulang image-nya
     # ("docker compose up -d --build frontend"), bukan cukup restart.

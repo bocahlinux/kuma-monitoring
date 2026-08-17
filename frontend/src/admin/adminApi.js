@@ -1,32 +1,14 @@
-const KEY_STORAGE = 'kuma_status_admin_api_key';
-
-// sessionStorage (bukan localStorage) -- key hilang begitu tab ditutup, nggak nempel
-// terus-terusan di browser publik/shared.
-export function getStoredApiKey() {
-  return sessionStorage.getItem(KEY_STORAGE) || '';
-}
-
-export function setStoredApiKey(key) {
-  sessionStorage.setItem(KEY_STORAGE, key);
-}
-
-export function clearStoredApiKey() {
-  sessionStorage.removeItem(KEY_STORAGE);
-}
-
 async function request(path, { method = 'GET', body } = {}) {
-  const apiKey = getStoredApiKey();
   const res = await fetch(`/api${path}`, {
     method,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
     },
     body: body ? JSON.stringify(body) : undefined,
   });
 
   if (res.status === 401) {
-    clearStoredApiKey();
     throw new Error('UNAUTHORIZED');
   }
 
@@ -40,13 +22,9 @@ async function request(path, { method = 'GET', body } = {}) {
 }
 
 export const adminApi = {
-  login(key) {
-    setStoredApiKey(key);
-    return request('/status-pages').catch((err) => {
-      clearStoredApiKey();
-      throw err;
-    });
-  },
+  login: (username, password) => request('/auth/login', { method: 'POST', body: { username, password } }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
+  me: () => request('/auth/me').then((d) => d.user),
   listMonitors: () => request('/monitors').then((d) => d.monitors),
   listStatusPages: () => request('/status-pages').then((d) => d.statusPages),
   getStatusPage: (slug) => request(`/status-pages/${slug}`).then((d) => d.statusPage),
@@ -71,4 +49,8 @@ export const adminApi = {
     request(`/status-pages/${slug}/incidents/${incidentId}`, { method: 'PUT', body: { note } }).then(
       (d) => d.statusPage
     ),
+  listUsers: () => request('/users').then((d) => d.users),
+  createUser: (payload) => request('/users', { method: 'POST', body: payload }).then((d) => d.user),
+  updateUser: (id, payload) => request(`/users/${id}`, { method: 'PUT', body: payload }).then((d) => d.user),
+  deleteUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
 };

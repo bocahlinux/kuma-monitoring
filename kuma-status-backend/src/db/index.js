@@ -47,6 +47,25 @@ export function initDb(dbPath) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_incidents_monitor ON incidents (kuma_monitor_id, started_at DESC);
+
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      token_hash TEXT UNIQUE NOT NULL,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      expires_at TEXT NOT NULL,
+      last_seen_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions (user_id);
   `);
 
   migrate(db);

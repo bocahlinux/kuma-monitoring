@@ -4,7 +4,7 @@ React (Vite) berisi tiga halaman:
 
 - **`/`** — halaman gabungan, tiap status page yang ditandai "tampil di halaman utama" (toggle di `/admin`) muncul sebagai satu kategori/section. Consume `GET /api/home`.
 - **`/<slug>`** — status page publik untuk satu status page saja (misal `/samsat`, `/vpn`), buat kalau mau share link satu kategori tanpa yang lain. Consume `GET /api/status-pages/:slug`. Tetap bisa diakses walau toggle "tampil di halaman utama"-nya nonaktif.
-- **`/admin`** — kelola status page (buat/hapus, toggle tampil di `/` atau tidak, atur monitor mana yang ditampilkan, label, urutan) lewat UI, tanpa perlu `curl` manual. Login pakai `API_KEY` yang sama dengan backend. Tiap status page di list-nya ada link langsung ke halaman publiknya (`/<slug>`).
+- **`/admin`** — kelola status page (buat/hapus, toggle tampil di `/` atau tidak, atur monitor mana yang ditampilkan, label, urutan) lewat UI, tanpa perlu `curl` manual. Login pakai username + password (akun tersimpan di database backend, bisa tambah/edit/hapus user lewat menu "Kelola User"). Tiap status page di list-nya ada link langsung ke halaman publiknya (`/<slug>`).
 
 Di dalam **satu** status page, monitor bisa dikelompokkan lagi pakai **Groups** (persis fitur Groups di status page bawaan Kuma) — bikin grup bernama (misal "VPN", "SAMSAT") lewat editor di `/admin`, lalu assign tiap monitor ke grup yang sesuai. Monitor yang belum di-assign tampil di atas tanpa header grup. Jadi ada dua level pengelompokan: status page (jadi kategori di `/`) → Group di dalamnya (jadi sub-header).
 
@@ -33,9 +33,9 @@ Kedua endpoint publik (`/api/home`, `/api/status-pages/:slug`) sengaja tanpa API
 - `src/components/ThemeToggle.jsx` — tombol toggle mode terang/gelap, disimpan ke `localStorage` per device
 - `src/theme.js` — baca/tulis preferensi tema; anti-kedipan tema salah ditangani inline script blocking di `index.html` (jalan sebelum CSS ke-parse)
 - `src/statusMeta.js` — ikon + label Indonesia per status (`up`/`down`/`pending`/`maintenance`/`unknown`), satu sumber dipakai halaman publik & admin
-- `src/admin/adminApi.js` — fetch ke endpoint admin backend, kirim header `x-api-key` (disimpan di `sessionStorage`, hilang begitu tab ditutup)
-- `src/admin/AdminApp.jsx` — orchestrator halaman admin (login → list status page → editor)
-- `src/admin/components/` — `Login`, `StatusPageList`, `StatusPageEditor` (detail/slug, Groups, Monitor, dan Insiden — bagian terakhir ini cuma buat isi/ubah `note` per insiden, bukan buat bikin insiden manual; waktu mulai/selesainya tetap otomatis dari backend)
+- `src/admin/adminApi.js` — fetch ke endpoint admin backend dengan `credentials: 'include'` (cookie sesi httpOnly, bukan header custom yang disimpan di JS)
+- `src/admin/AdminApp.jsx` — orchestrator halaman admin (cek sesi via `GET /api/auth/me` → login → list status page/editor/kelola user)
+- `src/admin/components/` — `Login` (username+password), `StatusPageList`, `StatusPageEditor` (detail/slug, Groups, Monitor, dan Insiden — bagian terakhir ini cuma buat isi/ubah `note` per insiden, bukan buat bikin insiden manual; waktu mulai/selesainya tetap otomatis dari backend), `UserList` (tambah/ganti password/hapus akun admin)
 - `src/main.jsx` — routing sederhana berbasis `window.location.pathname` (kosong = `HomePage`, `admin` = `AdminApp`, selain itu = `App` dengan slug dari segmen pertama URL), tanpa react-router
 
 ## Development lokal
@@ -74,4 +74,4 @@ Dipakai buat monitor 32"+ yang dipasang di dinding/kantor, dilihat dari jarak be
 
 ## Keamanan halaman `/admin`
 
-`/admin` **tidak dilindungi login system beneran** — cuma modal "masukkan API key" yang disimpan di `sessionStorage` browser lalu dikirim sebagai header `x-api-key` ke tiap request. Proteksi sebenarnya ada di backend (Express middleware `apiKeyAuth`): tanpa key yang cocok, semua endpoint admin balas `401`. Siapa pun yang tahu URL `/admin` bisa membuka halamannya, tapi tidak bisa melakukan apa-apa tanpa API key yang benar. Ini cukup buat kebutuhan satu admin/tim kecil — kalau nanti butuh multi-user dengan hak akses berbeda, ini perlu diganti sistem auth yang lebih proper (bukan sekadar shared API key).
+Login `/admin` pakai username + password sungguhan: akun disimpan di tabel `users` (password di-hash `bcrypt`) pada database backend, dan sesi login pakai cookie `httpOnly` (bukan disimpan/dibaca lewat JS) yang dicocokkan ke tabel `sessions`. Admin bisa tambah/ganti password/hapus user lain lewat menu "Kelola User" — tidak ada lagi satu shared secret buat semua orang. Backend juga masih menerima header `x-api-key` (kalau `API_KEY` diisi di `.env`) sebagai jalur alternatif buat script/integrasi, berdampingan dengan login cookie ini. Detail implementasi ada di `kuma-status-backend/src/middleware/sessionAuth.js`, `src/routes/auth.js`, dan `src/routes/users.js`.

@@ -1,15 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
-import { adminApi, clearStoredApiKey, getStoredApiKey } from './adminApi';
+import { adminApi } from './adminApi';
 import Login from './components/Login';
 import StatusPageList from './components/StatusPageList';
 import StatusPageEditor from './components/StatusPageEditor';
+import UserList from './components/UserList';
 import './admin.css';
 
 export default function AdminApp() {
-  const [loggedIn, setLoggedIn] = useState(!!getStoredApiKey());
+  // null = lagi dicek ke server, true/false = hasil pengecekan. Nggak bisa langsung
+  // tau dari JS apakah cookie sesi ada (httpOnly), jadi wajib tanya /api/auth/me dulu.
+  const [loggedIn, setLoggedIn] = useState(null);
   const [pages, setPages] = useState([]);
   const [selectedSlug, setSelectedSlug] = useState(null);
+  const [showUsers, setShowUsers] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    adminApi
+      .me()
+      .then(() => setLoggedIn(true))
+      .catch(() => setLoggedIn(false));
+  }, []);
 
   const loadPages = useCallback(async () => {
     try {
@@ -29,15 +40,27 @@ export default function AdminApp() {
     if (loggedIn) loadPages();
   }, [loggedIn, loadPages]);
 
+  if (loggedIn === null) {
+    return <p className="admin-dim" style={{ textAlign: 'center', marginTop: 40 }}>Memuat…</p>;
+  }
+
   if (!loggedIn) {
     return <Login onSuccess={() => setLoggedIn(true)} />;
   }
 
-  const logout = () => {
-    clearStoredApiKey();
-    setLoggedIn(false);
-    setSelectedSlug(null);
+  const logout = async () => {
+    try {
+      await adminApi.logout();
+    } finally {
+      setLoggedIn(false);
+      setSelectedSlug(null);
+      setShowUsers(false);
+    }
   };
+
+  if (showUsers) {
+    return <UserList onBack={() => setShowUsers(false)} />;
+  }
 
   if (selectedSlug) {
     return (
@@ -52,7 +75,13 @@ export default function AdminApp() {
   return (
     <>
       {error && <p className="admin-error admin-error--floating">{error}</p>}
-      <StatusPageList pages={pages} onOpen={setSelectedSlug} onChanged={loadPages} onLogout={logout} />
+      <StatusPageList
+        pages={pages}
+        onOpen={setSelectedSlug}
+        onChanged={loadPages}
+        onLogout={logout}
+        onManageUsers={() => setShowUsers(true)}
+      />
     </>
   );
 }

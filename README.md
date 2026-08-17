@@ -1,6 +1,6 @@
 # kuma-monitoring
 
-Satu stack Docker Compose berisi Uptime Kuma, MariaDB, Cloudflare Tunnel, dan backend perantara (`kuma-status-backend`) yang mengekspos data monitor Kuma sebagai REST API + WebSocket untuk frontend status page custom.
+Satu stack Docker Compose berisi Uptime Kuma, MariaDB, dan backend perantara (`kuma-status-backend`) yang mengekspos data monitor Kuma sebagai REST API + WebSocket untuk frontend status page custom.
 
 ```
 .
@@ -27,7 +27,7 @@ git clone https://github.com/bocahlinux/kuma-monitoring.git /opt/kuma-monitoring
 cd /opt/kuma-monitoring
 
 cp .env.example .env
-nano .env   # isi TZ, KUMA_USERNAME/PASSWORD, MYSQL_*, CLOUDFLARE_TUNNEL_TOKEN, dst
+nano .env   # isi TZ, KUMA_USERNAME/PASSWORD, MYSQL_*, ADMIN_USERNAME/PASSWORD, dst
 
 docker compose up -d --build
 docker compose logs -f kuma-status-backend   # pastikan muncul "login berhasil"
@@ -35,15 +35,11 @@ docker compose logs -f kuma-status-backend   # pastikan muncul "login berhasil"
 
 Semua data persisten (database Kuma, MariaDB, SQLite custom status page) tersimpan di `./data/` — cukup backup folder ini kalau perlu migrasi/restore.
 
-## Akses dari luar (Cloudflare Tunnel)
+## Akses dari luar
 
-`kuma-status-backend` dan `frontend` sengaja **tidak** publish port ke host (`ports:` dikosongkan) — cuma bisa diakses dari dalam `monitoring-network`. Hanya **satu** Public Hostname yang dibutuhkan, mengarah ke `frontend`:
+Stack ini **tidak** memakai Cloudflare Tunnel — `kuma-status-backend` dan `frontend` di-bind langsung ke IP Tailscale (`100.83.41.88`) di `docker-compose.yml` (port `4000` dan `80`), bukan publish ke semua interface. Akses dari luar VPS lewat IP Tailscale itu saja.
 
-1. Buka **Cloudflare Zero Trust dashboard → Networks → Tunnels**, pilih tunnel yang dipakai `monitoring-cloudflared`.
-2. Public Hostname domain kamu (misal `kuma-status.domainkamu.com`) arahkan ke `http://kuma-status-frontend:80`. Kalau sebelumnya domain ini sempat diarahkan ke `kuma-status-backend:4000`, **ubah Service-nya** ke `kuma-status-frontend:80`.
-3. **Backend tidak dapat Public Hostname sendiri** — nginx di container `frontend` yang reverse-proxy semua `/api/*` ke `kuma-status-backend:4000` lewat docker network internal (lihat `frontend/nginx.conf`). Proteksinya tetap ada di backend: `GET /api/home` dan `GET /api/status-pages/:slug` publik (dipakai halaman `/` dan `/<slug>`), endpoint lainnya (kelola status page, `GET /api/monitors` mentah, dipakai halaman `/admin`) wajib header `x-api-key` — salah/tanpa key otomatis dapat `401` dari backend, siapa pun yang tahu URL-nya tetap nggak bisa ngapa-ngapain tanpa API key yang benar.
-
-Kalau suatu saat butuh akses backend langsung tanpa lewat frontend (misal debug), backend juga sudah di-bind ke IP Tailscale di `docker-compose.yml` (`100.83.41.88:4000`) — lihat service `kuma-status-backend`.
+`frontend` (nginx) reverse-proxy semua `/api/*` ke `kuma-status-backend:4000` lewat docker network internal (lihat `frontend/nginx.conf`), jadi backend tidak perlu port terbuka sendiri untuk dipakai status page publik — port `4000` yang di-bind ke Tailscale IP itu cuma buat akses langsung/debug. Proteksinya tetap ada di backend: `GET /api/home` dan `GET /api/status-pages/:slug` publik (dipakai halaman `/` dan `/<slug>`), endpoint lainnya (kelola status page, `GET /api/monitors` mentah, dipakai halaman `/admin`) wajib login (cookie sesi) atau header `x-api-key` — salah/tanpa itu otomatis dapat `401` dari backend.
 
 ## Frontend (status page publik + admin)
 
